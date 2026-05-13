@@ -33,14 +33,23 @@ export async function fetchTop4Standings(): Promise<Standings[]> {
 }
 
 export async function fetchEnrichedFixtures(): Promise<Fixture[]> {
-  const [fixtures, videos] = await Promise.all([
-    football().getRecentAndUpcomingFixtures({
+  // YouTube quota 등으로 영상이 실패해도 fixtures는 무조건 표시되도록 분리
+  let fixtures: Fixture[] = [];
+  let videos: HighlightVideo[] = [];
+  try {
+    fixtures = await football().getRecentAndUpcomingFixtures({
       leagueCodes: [...TOP4, "CL"],
       daysPast: 3,
       daysFuture: 7,
-    }),
-    youtube().getRecentVideos({ maxResults: 30 }),
-  ]);
+    });
+  } catch {
+    return [];
+  }
+  try {
+    videos = await youtube().getRecentVideos({ maxResults: 30 });
+  } catch {
+    // YouTube 실패해도 fixtures는 살림 (영상 매칭만 빠짐)
+  }
   return tagKoreanFixtures(matchHighlights(fixtures, videos));
 }
 
