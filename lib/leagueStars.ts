@@ -86,16 +86,27 @@ function build(): LeagueStarPlayer[] {
 
 const ALL = build();
 
+// 두 이름이 같은 선수의 alias인지 (prefix/normalize 매칭)
+function looksLikeSamePlayer(a: string, b: string): boolean {
+  if (a === b) return true;
+  const na = a.replace(/[\s·\-]/g, "");
+  const nb = b.replace(/[\s·\-]/g, "");
+  if (na === nb) return true;
+  // 한쪽이 다른 쪽의 prefix이고 길이 차이 ≤ 3 이내
+  if ((a.startsWith(b) || b.startsWith(a)) && Math.abs(a.length - b.length) <= 3) return true;
+  return false;
+}
+
 /** 리그 코드별 시장가치 top N (alias dedupe 포함). */
 export function topByLeague(league: LeagueCode, n = 5): LeagueStarPlayer[] {
   const players = ALL.filter((p) => p.league === league);
-  // 같은 팀 + 같은 가치 = alias 가능성 → 첫 등장만 유지
-  const seen = new Set<string>();
   const unique: LeagueStarPlayer[] = [];
   for (const p of players.sort((a, b) => b.valueBillionWon - a.valueBillionWon)) {
-    const key = `${p.teamId}::${p.valueBillionWon}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    // 이미 unique에 같은 선수의 alias가 있는지 확인 (같은 팀 + 이름 유사도)
+    const isAlias = unique.some(
+      (u) => u.teamId === p.teamId && looksLikeSamePlayer(u.name, p.name)
+    );
+    if (isAlias) continue;
     unique.push(p);
     if (unique.length >= n) break;
   }
@@ -216,15 +227,18 @@ export async function topByLeagueWithPhotos(
   return stars.map((star) => {
     const squad = squads.get(star.teamId);
     if (!squad) return star;
-    const normalized = (s: string) => s.replace(/[\s·\-]/g, "");
     const matched =
+      // 1) 정확 매칭
       squad.find((p) => p.name === star.name) ||
-      squad.find(
-        (p) =>
-          p.name.startsWith(star.name) ||
-          star.name.startsWith(p.name) ||
-          normalized(p.name) === normalized(star.name)
-      );
+      // 2) prefix/normalize 매칭
+      squad.find((p) => looksLikeSamePlayer(p.name, star.name)) ||
+      // 3) 토큰(공백 분리) 단위 매칭 - 한 토큰이라도 같으면 OK
+      squad.find((p) => {
+        const aTokens = star.name.split(/\s+/).filter((t) => t.length >= 2);
+        const bTokens = p.name.split(/\s+/).filter((t) => t.length >= 2);
+        // 양쪽이 공유하는 토큰이 1개 이상 + 길이 차이 작음
+        return aTokens.some((t) => bTokens.includes(t)) && Math.abs(star.name.length - p.name.length) <= 5;
+      });
     return matched
       ? { ...star, photoUrl: matched.profileUrl, nationality: matched.countryName }
       : star;
