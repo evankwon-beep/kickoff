@@ -4,6 +4,7 @@ import { LeagueStandingsCard } from "@/components/LeagueStandingsCard";
 import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 import { HighlightStrip } from "@/components/HighlightStrip";
 import { KoreanPlayerSection } from "@/components/KoreanPlayerSection";
+import { StaleDataNotice } from "@/components/StaleDataNotice";
 import {
   fetchTop4Standings,
   fetchEnrichedFixtures,
@@ -23,6 +24,9 @@ export default async function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 space-y-6">
+        <StaleDataNotice
+          show={standings.length === 0 || fixtures.length === 0 || videos.length === 0}
+        />
         <UpcomingFixtures fixtures={fixtures} />
         <section>
           <h2 className="font-bold text-lg mb-3">4대 리그 순위</h2>
