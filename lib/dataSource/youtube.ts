@@ -27,7 +27,8 @@ export class YoutubeHighlightSource implements HighlightSource {
     for (const channelId of channels) {
       results.push(...(await this.fetchChannel(channelId, opts.maxResults)));
     }
-    return results.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    results.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    return this.filterOutShorts(results);
   }
 
   private async fetchChannel(channelId: string, maxResults: number): Promise<HighlightVideo[]> {
@@ -54,4 +55,48 @@ export class YoutubeHighlightSource implements HighlightSource {
         thumbnailUrl: i.snippet.thumbnails.high?.url ?? i.snippet.thumbnails.default?.url ?? "",
       }));
   }
+
+  private async filterOutShorts(videos: HighlightVideo[]): Promise<HighlightVideo[]> {
+    if (videos.length === 0) return videos;
+    // YouTube API returns up to 50 ids per call
+    const chunks: string[][] = [];
+    for (let i = 0; i < videos.length; i += 50) chunks.push(videos.slice(i, i + 50).map((v) => v.videoId));
+    const durations = new Map<string, number>(); // videoId -> seconds
+    for (const chunk of chunks) {
+      const params = new URLSearchParams({
+        key: this.apiKey,
+        part: "contentDetails",
+        id: chunk.join(","),
+      });
+      try {
+        const res = await fetch(`${BASE}/videos?${params.toString()}`, {
+          next: { revalidate: 3600 },
+        } as RequestInit);
+        if (!res.ok) continue;
+        const data = (await res.json()) as { items?: Array<{ id: string; contentDetails?: { duration?: string } }> };
+        for (const it of data.items ?? []) {
+          durations.set(it.id, parseIsoDuration(it.contentDetails?.duration ?? "PT0S"));
+        }
+      } catch {
+        // ignore; keep all videos for this chunk
+      }
+    }
+    return videos.filter((v) => {
+      const d = durations.get(v.videoId);
+      // If we don't know duration, keep it (better than dropping accidentally)
+      if (d === undefined) return true;
+      // Shorts are <= 60 seconds. Use 70 as buffer for borderline.
+      return d > 70;
+    });
+  }
+}
+
+function parseIsoDuration(iso: string): number {
+  // PT#H#M#S → seconds
+  const m = iso.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!m) return 0;
+  const h = Number(m[1] ?? 0);
+  const min = Number(m[2] ?? 0);
+  const s = Number(m[3] ?? 0);
+  return h * 3600 + min * 60 + s;
 }

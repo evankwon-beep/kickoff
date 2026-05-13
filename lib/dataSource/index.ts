@@ -60,7 +60,7 @@ export async function fetchTeamDetailEnriched(teamId: number): Promise<TeamDetai
         position: np.position ?? "기타", // GK/DF/MF/FW
         shirtNumber: np.backNo ? Number(np.backNo) : undefined,
         nationality: np.countryName,
-        // explicitly do NOT set photoUrl — user requested removal
+        photoUrl: np.profileUrl,
       }));
       return { ...detail, squad: replaced };
     }
@@ -108,6 +108,31 @@ export async function fetchEnrichedFixturesByTop6(): Promise<Fixture[]> {
 
 export async function fetchCompetition(code: LeagueCode) {
   return football().getStandings(code).catch(() => null);
+}
+
+const COMPETITION_KEYWORDS: Record<string, string[]> = {
+  CL: ["챔피언스", "champions league", "ucl"],
+  WC: ["월드컵", "world cup", "fifa"],
+  EC: ["유로", "euro 20", "euros"],
+  EL: ["유로파", "europa league", "uel"],
+  PL: ["epl", "프리미어리그", "premier league"],
+  PD: ["라리가", "la liga", "laliga"],
+  BL1: ["분데스", "bundesliga"],
+  SA: ["세리에", "serie a"],
+};
+
+export async function fetchCompetitionHighlights(
+  code: LeagueCode,
+  maxResults = 40
+): Promise<HighlightVideo[]> {
+  const keywords = COMPETITION_KEYWORDS[code] ?? [];
+  if (keywords.length === 0) return [];
+  const all = await youtube().getRecentVideos({ maxResults });
+  const fb = filterFootballHighlights(all);
+  return fb.filter((v) => {
+    const lower = v.title.toLowerCase();
+    return keywords.some((k) => lower.includes(k.toLowerCase()));
+  });
 }
 
 export async function fetchCompetitionFixtures(code: LeagueCode) {

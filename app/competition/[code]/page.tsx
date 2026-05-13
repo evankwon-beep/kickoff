@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { UpcomingFixtures } from "@/components/UpcomingFixtures";
+import { FixturesList } from "@/components/FixturesList";
+import { HighlightStrip } from "@/components/HighlightStrip";
 import { LeagueStandingsCard } from "@/components/LeagueStandingsCard";
 import {
   fetchCompetition,
   fetchCompetitionFixtures,
+  fetchCompetitionHighlights,
   fetchGroupStandings,
 } from "@/lib/dataSource";
 import type { LeagueCode } from "@/lib/dataSource/types";
@@ -37,10 +39,11 @@ export default async function CompetitionPage({ params }: PageProps) {
   if (!VALID.includes(code)) notFound();
 
   const isGroupStage = code === "WC" || code === "CL"; // future: detect dynamically
-  const [singleStandings, groups, fixtures] = await Promise.all([
+  const [singleStandings, groups, fixtures, highlights] = await Promise.all([
     isGroupStage ? Promise.resolve(null) : fetchCompetition(code),
     isGroupStage ? fetchGroupStandings(code) : Promise.resolve([]),
     fetchCompetitionFixtures(code).catch(() => []),
+    fetchCompetitionHighlights(code).catch(() => []),
   ]);
 
   const meta = MAJOR_TOURNAMENTS.find((t) => t.code === code);
@@ -60,7 +63,13 @@ export default async function CompetitionPage({ params }: PageProps) {
           )}
         </div>
 
-        <UpcomingFixtures fixtures={fixtures} />
+        <FixturesList
+          fixtures={fixtures}
+          title="경기 일정"
+          emptyText="이 기간에 예정된 경기가 없어요."
+        />
+
+        <HighlightStrip videos={highlights} />
 
         {groups.length > 0 ? (
           <section>

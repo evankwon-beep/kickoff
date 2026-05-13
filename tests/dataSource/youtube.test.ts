@@ -37,3 +37,41 @@ describe("YoutubeHighlightSource.getRecentVideos", () => {
     });
   });
 });
+
+describe("YoutubeHighlightSource - shorts filter", () => {
+  it("removes videos shorter than ~60 seconds", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/search?")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [
+              { id: { kind: "youtube#video", videoId: "longvid" }, snippet: { publishedAt: "2026-05-13T10:00:00Z", channelTitle: "ch", title: "long video", thumbnails: { high: { url: "" } } } },
+              { id: { kind: "youtube#video", videoId: "shortvid" }, snippet: { publishedAt: "2026-05-13T10:00:00Z", channelTitle: "ch", title: "short video", thumbnails: { high: { url: "" } } } },
+            ],
+          }),
+        };
+      }
+      if (url.includes("/videos?")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [
+              { id: "longvid", contentDetails: { duration: "PT3M20S" } }, // 200s
+              { id: "shortvid", contentDetails: { duration: "PT45S" } }, // shorts
+            ],
+          }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    }));
+
+    const src = new YoutubeHighlightSource("k", "C", []);
+    const videos = await src.getRecentVideos({ maxResults: 20 });
+    const ids = videos.map((v) => v.videoId);
+    expect(ids).toContain("longvid");
+    expect(ids).not.toContain("shortvid");
+  });
+});
