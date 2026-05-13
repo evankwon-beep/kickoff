@@ -25,28 +25,31 @@ describe("MatchRow", () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  // 모바일+데스크탑 두 레이아웃 둘 다 렌더되므로 getAllBy 사용
   it("shows both teams and score for finished match", () => {
     render(<MatchRow fixture={finishedFixture} />);
-    expect(screen.getByText("Tottenham")).toBeInTheDocument();
-    expect(screen.getByText("Chelsea")).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument();
+    // koreanTeamName(73) = "토트넘", (61) = "첼시"
+    expect(screen.getAllByText("토트넘").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("첼시").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
   });
 
   it("renders highlight link when youtube id present", () => {
     render(<MatchRow fixture={finishedFixture} />);
-    const link = screen.getByRole("link", { name: /하이라이트/ });
-    expect(link).toHaveAttribute("href", "https://www.youtube.com/watch?v=abc123");
+    const links = screen.getAllByRole("link", { name: /하이라이트/ });
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0]).toHaveAttribute("href", "https://www.youtube.com/watch?v=abc123");
   });
 
   it("shows Korean flag when hasKoreanPlayer", () => {
     render(<MatchRow fixture={finishedFixture} />);
-    expect(screen.getByLabelText(/한국 선수 출전/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/한국 선수 출전/).length).toBeGreaterThan(0);
   });
 
   it("shows VS (not score) for scheduled match", () => {
     const sched: Fixture = { ...finishedFixture, status: "SCHEDULED", score: { home: null, away: null } };
     render(<MatchRow fixture={sched} />);
-    expect(screen.getByText("VS")).toBeInTheDocument();
+    expect(screen.getAllByText("VS").length).toBeGreaterThan(0);
   });
 });
