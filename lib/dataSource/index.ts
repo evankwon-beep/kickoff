@@ -8,7 +8,7 @@ import { filterFootballHighlights, filterByTeam } from "@/lib/highlightFilter";
 import { fetchNaverSquad } from "@/lib/naverSquad";
 import type { Fixture, LeagueCode, Standings, HighlightVideo, SquadMember, TeamDetail } from "./types";
 
-const TOP4: LeagueCode[] = ["PL", "PD", "BL1", "SA"];
+const TOP4: LeagueCode[] = ["PL", "PD", "BL1", "SA", "FL1"];
 
 let _footballData: FootballDataSource | null = null;
 function football() {
@@ -182,6 +182,7 @@ const COMPETITION_KEYWORDS: Record<string, string[]> = {
   PD: ["라리가", "la liga", "laliga"],
   BL1: ["분데스", "bundesliga"],
   SA: ["세리에", "serie a"],
+  FL1: ["리그앙", "ligue 1", "ligue1"],
 };
 
 export async function fetchCompetitionHighlights(

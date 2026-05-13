@@ -77,8 +77,16 @@ const TEAM_NAME_ALIASES: Record<string, string[]> = {
   "AC Milan": ["AC밀란", "ac 밀란", "밀란", "ac milan"],
   "AS Roma": ["AS 로마", "as 로마", "as roma", "로마"],
   "Atalanta BC": ["아탈란타", "atalanta"],
-  // PSG / Champions League regulars
-  "Paris Saint-Germain FC": ["파리 생제르맹", "psg"],
+  // Ligue 1 top
+  "Paris Saint-Germain FC": ["파리 생제르맹", "파리", "psg", "paris saint-germain", "paris sg"],
+  "Olympique de Marseille": ["마르세유", "올림피크 마르세유", "marseille", "om"],
+  "AS Monaco FC": ["AS 모나코", "모나코", "monaco"],
+  "Olympique Lyonnais": ["리옹", "올림피크 리옹", "olympique lyonnais", "ol", "lyon"],
+  "Lille OSC": ["릴", "losc", "losc lille", "lille"],
+  "Racing Club de Lens": ["랑스", "rc lens", "lens"],
+  "Stade Rennais FC 1901": ["스타드 렌", "렌", "stade rennais", "rennes"],
+  "OGC Nice": ["OGC 니스", "니스", "ogc nice", "nice"],
+  "RC Strasbourg Alsace": ["스트라스부르", "rc strasbourg", "strasbourg"],
 };
 
 const TOP_TEAM_ALIASES: string[] = (() => {

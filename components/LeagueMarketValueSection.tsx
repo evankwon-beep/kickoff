@@ -89,7 +89,7 @@ export async function LeagueMarketValueSection() {
   return (
     <section>
       <h2 className="section-title text-xl mb-3">리그별 몸값 TOP 5</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {TOP4_LEAGUES.map((l) => (
           <LeagueCard
             key={l.code}

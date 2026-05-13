@@ -34,8 +34,8 @@ export default async function HomePage() {
         <MajorTournamentsBanner tournaments={activeTournaments} />
 
         <section>
-          <h2 className="section-title text-xl mb-3">4대 리그 순위</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <h2 className="section-title text-xl mb-3">5대 리그 순위</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {standings.map((s) => (
               <LeagueStandingsCard key={s.leagueCode} standings={s} />
             ))}

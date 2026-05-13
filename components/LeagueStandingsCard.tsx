@@ -17,6 +17,7 @@ const nameByCode: Record<LeagueCode, string> = {
   PD: "라리가",
   BL1: "분데스리가",
   SA: "세리에A",
+  FL1: "리그앙",
   CL: "챔피언스리그",
   FA: "FA컵",
   WC: "월드컵",

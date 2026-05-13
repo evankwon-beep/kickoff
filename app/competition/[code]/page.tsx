@@ -16,13 +16,14 @@ import { MAJOR_TOURNAMENTS } from "@/lib/majorTournaments";
 
 export const revalidate = 3600;
 
-const VALID: LeagueCode[] = ["PL", "PD", "BL1", "SA", "CL", "WC", "EC", "FA"];
+const VALID: LeagueCode[] = ["PL", "PD", "BL1", "SA", "FL1", "CL", "WC", "EC", "FA"];
 
 const TITLES: Record<LeagueCode, string> = {
   PL: "프리미어리그",
   PD: "라리가",
   BL1: "분데스리가",
   SA: "세리에A",
+  FL1: "리그앙",
   CL: "UEFA 챔피언스리그",
   WC: "FIFA 월드컵",
   EC: "UEFA 유로",
@@ -35,6 +36,7 @@ const SEARCH_KEYWORDS: Record<LeagueCode, string> = {
   PD: "라리가",
   BL1: "분데스리가",
   SA: "세리에A",
+  FL1: "리그앙",
   CL: "챔피언스리그",
   WC: "월드컵",
   EC: "유로",

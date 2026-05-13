@@ -7,7 +7,8 @@ const TOTAL_MATCHES: Record<LeagueCode, number> = {
   PD: 38,
   BL1: 34,
   SA: 38,
-  CL: 6,    // not really applicable for KO-stage; fallback
+  FL1: 34,  // Ligue 1: 18 teams × 34 matches
+  CL: 6,
   FA: 0,
   WC: 0,
   EC: 0,

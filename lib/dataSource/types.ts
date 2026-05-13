@@ -1,10 +1,11 @@
-export type LeagueCode = "PL" | "PD" | "BL1" | "SA" | "CL" | "FA" | "WC" | "EC";
+export type LeagueCode = "PL" | "PD" | "BL1" | "SA" | "FL1" | "CL" | "FA" | "WC" | "EC";
 
 export const TOP4_LEAGUES: { code: LeagueCode; nameKr: string; nameEn: string }[] = [
   { code: "PL", nameKr: "EPL", nameEn: "Premier League" },
   { code: "PD", nameKr: "라리가", nameEn: "La Liga" },
   { code: "BL1", nameKr: "분데스리가", nameEn: "Bundesliga" },
   { code: "SA", nameKr: "세리에A", nameEn: "Serie A" },
+  { code: "FL1", nameKr: "리그앙", nameEn: "Ligue 1" },
 ];
 
 export interface Team {

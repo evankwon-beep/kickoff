@@ -43,8 +43,17 @@ const SECTION: Record<string, SectionInfo> = {
   lazio: { teamId: 110, league: "SA", teamName: "라치오" },
   atalanta: { teamId: 102, league: "SA", teamName: "아탈란타" },
   fiorentina: { teamId: 99, league: "SA", teamName: "피오렌티나" },
-  // CL / 기타 (4대 리그 외라 league별 top 5엔 안 포함되지만 섹션 인식용)
-  psg: { teamId: 524, league: "CL", teamName: "PSG" },
+  // Ligue 1
+  psg: { teamId: 524, league: "FL1", teamName: "PSG" },
+  lens: { teamId: 546, league: "FL1", teamName: "랑스" },
+  lille: { teamId: 521, league: "FL1", teamName: "릴" },
+  lyon: { teamId: 523, league: "FL1", teamName: "리옹" },
+  rennes: { teamId: 529, league: "FL1", teamName: "렌" },
+  marseille: { teamId: 516, league: "FL1", teamName: "마르세유" },
+  monaco: { teamId: 548, league: "FL1", teamName: "AS 모나코" },
+  strasbourg: { teamId: 576, league: "FL1", teamName: "스트라스부르" },
+  nice: { teamId: 522, league: "FL1", teamName: "OGC 니스" },
+  // CL / 기타 (섹션 인식용)
   feyenoord: { teamId: 675, league: "CL", teamName: "페예노르트" },
   wolves: { teamId: 76, league: "PL", teamName: "울브스" },
 };
@@ -263,13 +272,14 @@ export async function topByLeagueWithPhotos(
 export async function topAllLeaguesByValue(
   n = 5
 ): Promise<Partial<Record<LeagueCode, LeagueStarPlayer[]>>> {
-  const [pl, pd, bl1, sa] = await Promise.all([
+  const [pl, pd, bl1, sa, fl1] = await Promise.all([
     topByLeagueWithPhotos("PL", n),
     topByLeagueWithPhotos("PD", n),
     topByLeagueWithPhotos("BL1", n),
     topByLeagueWithPhotos("SA", n),
+    topByLeagueWithPhotos("FL1", n),
   ]);
-  return { PL: pl, PD: pd, BL1: bl1, SA: sa };
+  return { PL: pl, PD: pd, BL1: bl1, SA: sa, FL1: fl1 };
 }
 
 /** (기존 fallback) 매핑 JSON만으로 top N — 사진 없음. */
@@ -281,6 +291,7 @@ export async function topStarsAllLeaguesWithPhotos(
     PD: topByLeague("PD", n),
     BL1: topByLeague("BL1", n),
     SA: topByLeague("SA", n),
+    FL1: topByLeague("FL1", n),
   };
 
   // 등장한 모든 teamId 모음
