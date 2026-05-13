@@ -71,6 +71,7 @@ export interface SquadMember {
   shirtNumber?: number;
   nationality?: string;
   dateOfBirth?: string;
+  photoUrl?: string;
 }
 
 export interface TeamDetail extends Team {

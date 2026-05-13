@@ -53,7 +53,12 @@ export default async function TeamPage({ params }: PageProps) {
     fetchTeamHighlights(team, 40).catch(() => []),
   ]);
 
-  const nameMap = await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(() => ({} as Record<string, string>));
+  const usingNaver = team.squad.length > 0 && team.squad.every((p) => p.photoUrl);
+  const nameMap = usingNaver
+    ? ({} as Record<string, string>)
+    : await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(
+        () => ({} as Record<string, string>)
+      );
 
   // Group squad by position bucket
   const groups: Record<string, typeof team.squad> = {};
@@ -129,36 +134,84 @@ export default async function TeamPage({ params }: PageProps) {
           {team.squad.length === 0 ? (
             <p className="text-[var(--color-muted)] py-4">선수단 정보가 아직 없어요.</p>
           ) : (
-            <div className="space-y-4">
-              {order
-                .filter((bucket) => groups[bucket])
-                .map((bucket) => (
-                  <div key={bucket}>
-                    <h3 className="text-sm font-semibold text-[var(--color-muted)] mb-2">{bucket}</h3>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {groups[bucket].map((p) => (
-                        <li
-                          key={p.id}
-                          className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/30 transition-colors"
-                        >
-                          <PlayerAvatar name={p.name} size={40} />
-                          {p.shirtNumber !== undefined && (
-                            <span className="font-mono text-xs w-7 text-center text-[var(--color-accent)] font-semibold">
-                              {p.shirtNumber}
-                            </span>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold truncate">{p.name}</p>
-                            <p className="text-xs text-[var(--color-muted)]">
-                              {[p.nationality, ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-            </div>
+            (() => {
+              const flatMode =
+                Object.keys(groups).length === 1 && Boolean(groups["기타"]);
+              if (flatMode) {
+                return (
+                  <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {groups["기타"]!.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/30 transition-colors"
+                      >
+                        {p.photoUrl ? (
+                          <Image
+                            src={p.photoUrl}
+                            alt={p.name}
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover shrink-0 bg-[var(--color-surface-2)]"
+                            unoptimized
+                          />
+                        ) : (
+                          <PlayerAvatar name={p.name} size={48} />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">{p.name}</p>
+                          <p className="text-xs text-[var(--color-muted)]">
+                            {p.nationality ?? ""}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              }
+              return (
+                <div className="space-y-4">
+                  {order
+                    .filter((bucket) => groups[bucket])
+                    .map((bucket) => (
+                      <div key={bucket}>
+                        <h3 className="text-sm font-semibold text-[var(--color-muted)] mb-2">{bucket}</h3>
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {groups[bucket].map((p) => (
+                            <li
+                              key={p.id}
+                              className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/30 transition-colors"
+                            >
+                              {p.photoUrl ? (
+                                <Image
+                                  src={p.photoUrl}
+                                  alt={p.name}
+                                  width={40}
+                                  height={40}
+                                  className="rounded-full object-cover shrink-0"
+                                  unoptimized
+                                />
+                              ) : (
+                                <PlayerAvatar name={p.name} size={40} />
+                              )}
+                              {p.shirtNumber !== undefined && (
+                                <span className="font-mono text-xs w-7 text-center text-[var(--color-accent)] font-semibold">
+                                  {p.shirtNumber}
+                                </span>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold truncate">{p.name}</p>
+                                <p className="text-xs text-[var(--color-muted)]">
+                                  {[p.nationality, ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
+                                </p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                </div>
+              );
+            })()
           )}
         </section>
 

@@ -5,7 +5,8 @@ import { YoutubeHighlightSource } from "./youtube";
 import { matchHighlights } from "@/lib/highlightMatcher";
 import { tagKoreanFixtures } from "@/lib/koreanPlayers";
 import { filterFootballHighlights, filterByTeam } from "@/lib/highlightFilter";
-import type { Fixture, LeagueCode, Standings, HighlightVideo } from "./types";
+import { fetchNaverSquad } from "@/lib/naverSquad";
+import type { Fixture, LeagueCode, Standings, HighlightVideo, SquadMember, TeamDetail } from "./types";
 
 const TOP4: LeagueCode[] = ["PL", "PD", "BL1", "SA"];
 
@@ -47,9 +48,23 @@ export async function fetchTopHighlights(maxResults = 12): Promise<HighlightVide
   return youtube().getRecentVideos({ maxResults });
 }
 
-export async function fetchTeamDetail(teamId: number) {
-  return football().getTeam(teamId);
+export async function fetchTeamDetailEnriched(teamId: number): Promise<TeamDetail> {
+  const detail = await football().getTeam(teamId);
+  const naver = await fetchNaverSquad(teamId);
+  if (naver && naver.length > 0) {
+    const replaced: SquadMember[] = naver.map((np, idx) => ({
+      id: idx + 1, // stable per-render id; Naver doesn't expose stable player ids cheaply
+      name: np.name,
+      position: "기타", // Naver doesn't categorize; group all under "선수단"
+      photoUrl: np.profileUrl,
+      nationality: np.countryName,
+    }));
+    return { ...detail, squad: replaced };
+  }
+  return detail;
 }
+
+export { fetchTeamDetailEnriched as fetchTeamDetail };
 
 export async function fetchTeamFixtures(teamId: number) {
   return football().getRecentAndUpcomingFixturesForTeam({
