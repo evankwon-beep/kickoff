@@ -18,7 +18,7 @@ export default async function HomePage() {
   const [standings, fixtures, videos] = await Promise.all([
     fetchTop4Standings().catch(() => []),
     fetchEnrichedFixturesByTop6().catch(() => []),
-    fetchFootballHighlights(40).catch(() => []),
+    fetchFootballHighlights(50).catch(() => []),
   ]);
 
   const partialFail =

@@ -107,19 +107,38 @@ export async function fetchTeamFixtures(teamId: number) {
 
 export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 50) {
   const capped = Math.min(maxResults, 50);
+
+  // 1) 두 사용자 채널에서 그 팀 매칭
   const channelVideos = await youtube()
     .getRecentVideos({ maxResults: capped })
     .catch(() => [] as HighlightVideo[]);
-  const teamFiltered = filterByTeam(channelVideos, team);
+  const teamFromChannels = filterByTeam(channelVideos, team);
 
-  // 그 팀 매칭 영상이 충분하면 그대로
-  if (teamFiltered.length >= 10) return teamFiltered;
+  if (teamFromChannels.length >= 10) {
+    return teamFromChannels.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  }
 
-  // 부족하면: 그 팀 영상을 위로, 나머지 모든 축구 하이라이트(일반)도 함께 노출
-  const generalFootball = filterFootballHighlights(channelVideos);
-  const seen = new Set(teamFiltered.map((v) => v.videoId));
-  const tail = generalFootball.filter((v) => !seen.has(v.videoId));
-  return [...teamFiltered, ...tail];
+  // 2) 부족하면 YouTube 전체에서 한국어 팀명으로 검색
+  const koMap = (await import("@/data/team-korean-names.json")).default as Array<{
+    id: number;
+    query: string;
+  }>;
+  const koreanName = koMap.find((t) => t.id === team.id)?.query;
+  const query = `${koreanName ?? team.shortName ?? team.name} 하이라이트`;
+  const searchVideos = await youtube()
+    .searchByQuery(query, 25)
+    .catch(() => [] as HighlightVideo[]);
+  const teamFromSearch = filterByTeam(searchVideos, team);
+
+  const seen = new Set(teamFromChannels.map((v) => v.videoId));
+  const combined: HighlightVideo[] = [...teamFromChannels];
+  for (const v of teamFromSearch) {
+    if (seen.has(v.videoId)) continue;
+    seen.add(v.videoId);
+    combined.push(v);
+  }
+  combined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return combined;
 }
 
 export async function fetchFootballHighlights(maxResults = 24) {
@@ -158,16 +177,41 @@ const COMPETITION_KEYWORDS: Record<string, string[]> = {
 
 export async function fetchCompetitionHighlights(
   code: LeagueCode,
-  maxResults = 40
+  maxResults = 50
 ): Promise<HighlightVideo[]> {
   const keywords = COMPETITION_KEYWORDS[code] ?? [];
   if (keywords.length === 0) return [];
-  const all = await youtube().getRecentVideos({ maxResults });
-  const fb = filterFootballHighlights(all);
-  return fb.filter((v) => {
+
+  // 1) 두 사용자 채널에서 가져와서 대회 키워드 매칭
+  const channelVideos = await youtube()
+    .getRecentVideos({ maxResults: Math.min(maxResults, 50) })
+    .catch(() => [] as HighlightVideo[]);
+  const fromChannels = filterFootballHighlights(channelVideos).filter((v) => {
     const lower = v.title.toLowerCase();
     return keywords.some((k) => lower.includes(k.toLowerCase()));
   });
+  if (fromChannels.length >= 10) return fromChannels;
+
+  // 2) 부족하면 YouTube 전체 검색 (대회 한국어 키워드)
+  const queryKeyword = keywords.find((k) => /[ㄱ-힯]/.test(k)) ?? keywords[0];
+  const query = `${queryKeyword} 하이라이트`;
+  const searchVideos = await youtube()
+    .searchByQuery(query, 25)
+    .catch(() => [] as HighlightVideo[]);
+  const fromSearch = filterFootballHighlights(searchVideos).filter((v) => {
+    const lower = v.title.toLowerCase();
+    return keywords.some((k) => lower.includes(k.toLowerCase()));
+  });
+
+  const seen = new Set(fromChannels.map((v) => v.videoId));
+  const merged = [...fromChannels];
+  for (const v of fromSearch) {
+    if (seen.has(v.videoId)) continue;
+    seen.add(v.videoId);
+    merged.push(v);
+  }
+  merged.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return merged;
 }
 
 export async function fetchCompetitionFixtures(code: LeagueCode) {
