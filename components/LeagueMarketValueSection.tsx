@@ -1,14 +1,10 @@
 import Link from "next/link";
 import { PlayerPhoto } from "./PlayerPhoto";
-import { topStarsFromTeamIds, type LeagueStarPlayer } from "@/lib/leagueStars";
-import type { LeagueCode, Standings } from "@/lib/dataSource/types";
+import { topAllLeaguesByValue, type LeagueStarPlayer } from "@/lib/leagueStars";
+import type { LeagueCode } from "@/lib/dataSource/types";
 import { TOP4_LEAGUES } from "@/lib/dataSource/types";
 import { koreanCountry } from "@/lib/i18n";
 import { LEAGUE_LOGOS } from "@/lib/leagueLogos";
-
-interface Props {
-  standings: Standings[];
-}
 
 function fmt(billionWon: number): string {
   if (billionWon >= 10_000) return `${(billionWon / 10_000).toFixed(1)}조`;
@@ -84,14 +80,11 @@ function LeagueCard({
   );
 }
 
-export async function LeagueMarketValueSection({ standings }: Props) {
-  // standings에서 리그별 top 6 팀 ID 추출
-  const teamsByLeague: Partial<Record<LeagueCode, number[]>> = {};
-  for (const s of standings) {
-    teamsByLeague[s.leagueCode] = s.rows.slice(0, 6).map((r) => r.team.id);
-  }
-
-  const result = await topStarsFromTeamIds(teamsByLeague, 5).catch(() => ({}));
+export async function LeagueMarketValueSection() {
+  // standings 무관: 매핑 JSON의 시장가치만 기준으로 리그별 top 5
+  const result = await topAllLeaguesByValue(5).catch(
+    () => ({} as Partial<Record<LeagueCode, LeagueStarPlayer[]>>)
+  );
 
   return (
     <section>

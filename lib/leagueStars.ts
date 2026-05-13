@@ -187,6 +187,57 @@ export async function topStarsFromTeamIds(
   return result;
 }
 
+/**
+ * 매핑 JSON 시장가치 기준 리그별 top N + 등장한 팀의 Naver squad에서 photoUrl 매칭.
+ * standings(리그 순위)와 무관 — 순수 시장가치만으로 ranking.
+ */
+export async function topByLeagueWithPhotos(
+  league: LeagueCode,
+  n = 5
+): Promise<LeagueStarPlayer[]> {
+  const stars = topByLeague(league, n);
+  const teamIds = new Set(stars.map((s) => s.teamId));
+  const squads = new Map<number, Awaited<ReturnType<typeof fetchNaverSquad>>>();
+  await Promise.all(
+    Array.from(teamIds).map(async (id) => {
+      try {
+        squads.set(id, await fetchNaverSquad(id));
+      } catch {
+        squads.set(id, null);
+      }
+    })
+  );
+
+  return stars.map((star) => {
+    const squad = squads.get(star.teamId);
+    if (!squad) return star;
+    const normalized = (s: string) => s.replace(/[\s·\-]/g, "");
+    const matched =
+      squad.find((p) => p.name === star.name) ||
+      squad.find(
+        (p) =>
+          p.name.startsWith(star.name) ||
+          star.name.startsWith(p.name) ||
+          normalized(p.name) === normalized(star.name)
+      );
+    return matched
+      ? { ...star, photoUrl: matched.profileUrl, nationality: matched.countryName }
+      : star;
+  });
+}
+
+export async function topAllLeaguesByValue(
+  n = 5
+): Promise<Partial<Record<LeagueCode, LeagueStarPlayer[]>>> {
+  const [pl, pd, bl1, sa] = await Promise.all([
+    topByLeagueWithPhotos("PL", n),
+    topByLeagueWithPhotos("PD", n),
+    topByLeagueWithPhotos("BL1", n),
+    topByLeagueWithPhotos("SA", n),
+  ]);
+  return { PL: pl, PD: pd, BL1: bl1, SA: sa };
+}
+
 /** (기존 fallback) 매핑 JSON만으로 top N — 사진 없음. */
 export async function topStarsAllLeaguesWithPhotos(
   n = 5
