@@ -75,20 +75,7 @@ export default async function CompetitionPage({ params }: PageProps) {
           )}
         </div>
 
-        <FixturesList
-          fixtures={fixtures}
-          title="경기 일정"
-          emptyText="이 기간에 예정된 경기가 없어요."
-        />
-
-        <HighlightStrip
-          videos={highlights}
-          layout="scroll"
-          limit={12}
-          title={`${title} 하이라이트`}
-          emptyStateQuery={`${SEARCH_KEYWORDS[code]} 하이라이트`}
-        />
-
+        {/* 1) 순위표 — 맨 위. 좌(순위) + 우(경기 일정/하이라이트 정보) 2단 밸런스 */}
         {groups.length > 0 ? (
           <section>
             <h2 className="section-title text-xl mb-3">조별 순위</h2>
@@ -102,16 +89,43 @@ export default async function CompetitionPage({ params }: PageProps) {
             </div>
           </section>
         ) : singleStandings ? (
-          <section>
-            <h2 className="section-title text-xl mb-3">순위표</h2>
-            <div className="max-w-md">
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5">
+            <div>
+              <h2 className="section-title text-xl mb-3">순위표</h2>
               <LeagueStandingsCard standings={singleStandings} topN={Math.min(20, singleStandings.rows.length)} />
+            </div>
+            <div>
+              <HighlightStrip
+                videos={highlights}
+                layout="grid"
+                limit={6}
+                title={`${title} 하이라이트`}
+                emptyStateQuery={`${SEARCH_KEYWORDS[code]} 하이라이트`}
+              />
             </div>
           </section>
         ) : (
           <section className="kickoff-card p-6">
             <p className="text-[var(--color-muted)]">아직 순위/조 정보를 가져올 수 없어요. 토너먼트가 시작되면 표시됩니다.</p>
           </section>
+        )}
+
+        {/* 2) 경기 일정 */}
+        <FixturesList
+          fixtures={fixtures}
+          title="경기 일정"
+          emptyText="이 기간에 예정된 경기가 없어요."
+        />
+
+        {/* 3) 하이라이트 (조별 단계나 standings 없을 때만 별도 노출 — 단일 standings의 경우 위 2단 안에 포함됨) */}
+        {!singleStandings && (
+          <HighlightStrip
+            videos={highlights}
+            layout="scroll"
+            limit={12}
+            title={`${title} 하이라이트`}
+            emptyStateQuery={`${SEARCH_KEYWORDS[code]} 하이라이트`}
+          />
         )}
       </main>
       <Footer />

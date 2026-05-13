@@ -65,7 +65,7 @@ function LeagueCard({
           <img
             src={LEAGUE_LOGOS[code]}
             alt=""
-            className="w-5 h-5 object-contain shrink-0"
+            className="w-6 h-6 object-contain shrink-0 bg-white rounded p-0.5"
             loading="lazy"
           />
         )}

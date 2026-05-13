@@ -49,7 +49,7 @@ export function LeagueStandingsCard({ standings, topN = 6, hideHeader = false }:
                 <img
                   src={LEAGUE_LOGOS[standings.leagueCode]}
                   alt=""
-                  className="w-6 h-6 object-contain shrink-0"
+                  className="w-7 h-7 object-contain shrink-0 bg-white rounded p-0.5"
                   loading="lazy"
                 />
               )}
