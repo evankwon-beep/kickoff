@@ -56,6 +56,38 @@ export class YoutubeHighlightSource implements HighlightSource {
       }));
   }
 
+  /** YouTube 전체에서 키워드로 검색. 채널 제한 없음. 팀 페이지에서 풍부한 결과 확보용. */
+  async searchByQuery(query: string, maxResults = 25): Promise<HighlightVideo[]> {
+    const params = new URLSearchParams({
+      key: this.apiKey,
+      q: query,
+      part: "snippet",
+      order: "date",
+      type: "video",
+      relevanceLanguage: "ko",
+      maxResults: String(Math.min(maxResults, 50)),
+    });
+    try {
+      const res = await fetch(`${BASE}/search?${params.toString()}`, {
+        next: { revalidate: 43200 }, // 12h
+      } as RequestInit);
+      if (!res.ok) return [];
+      const data = (await res.json()) as YtSearchResponse;
+      const videos: HighlightVideo[] = data.items
+        .filter((i) => i.id.videoId)
+        .map((i) => ({
+          videoId: i.id.videoId!,
+          title: i.snippet.title,
+          channelTitle: i.snippet.channelTitle,
+          publishedAt: i.snippet.publishedAt,
+          thumbnailUrl: i.snippet.thumbnails.high?.url ?? i.snippet.thumbnails.default?.url ?? "",
+        }));
+      return this.filterOutShorts(videos);
+    } catch {
+      return [];
+    }
+  }
+
   private async filterOutShorts(videos: HighlightVideo[]): Promise<HighlightVideo[]> {
     if (videos.length === 0) return videos;
     // YouTube API returns up to 50 ids per call

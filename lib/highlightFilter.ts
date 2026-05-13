@@ -114,8 +114,11 @@ function teamAliases(team: Team): string[] {
 
 export function filterByTeam(videos: HighlightVideo[], team: Team): HighlightVideo[] {
   const aliases = teamAliases(team);
-  return filterFootballHighlights(videos).filter((v) => {
+  return videos.filter((v) => {
     const lower = v.title.toLowerCase();
+    // 다른 스포츠 / K리그 / 프리뷰·리뷰 등은 제외
+    if (EXCLUDE_KEYWORDS.some((k) => lower.includes(k.toLowerCase()))) return false;
+    // 팀명 또는 alias 매칭
     return aliases.some((a) => lower.includes(a.toLowerCase()));
   });
 }

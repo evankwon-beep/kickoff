@@ -49,23 +49,46 @@ export async function fetchTopHighlights(maxResults = 12): Promise<HighlightVide
 }
 
 export async function fetchTeamDetailEnriched(teamId: number): Promise<TeamDetail> {
-  const detail = await football().getTeam(teamId);
-  const naver = await fetchNaverSquad(teamId);
-  if (naver && naver.length > 0) {
-    const firstTeam = naver.filter((p) => p.backNo && p.backNo.trim() !== "");
-    if (firstTeam.length > 0) {
-      const replaced: SquadMember[] = firstTeam.map((np, idx) => ({
-        id: idx + 1,
-        name: np.name,
-        position: np.position ?? "기타", // GK/DF/MF/FW
-        shirtNumber: np.backNo ? Number(np.backNo) : undefined,
-        nationality: np.countryName,
-        photoUrl: np.profileUrl,
-      }));
-      return { ...detail, squad: replaced };
-    }
+  // Football-Data + Naver를 병렬로 시도. 하나가 실패해도 다른 한쪽으로 페이지 렌더.
+  const [fdResult, naver] = await Promise.all([
+    football().getTeam(teamId).then(
+      (d) => ({ ok: true as const, data: d }),
+      () => ({ ok: false as const, data: null as TeamDetail | null }),
+    ),
+    fetchNaverSquad(teamId),
+  ]);
+
+  const firstTeam = naver?.filter((p) => p.backNo && p.backNo.trim() !== "") ?? [];
+  const naverSquad: SquadMember[] = firstTeam.map((np, idx) => ({
+    id: idx + 1,
+    name: np.name,
+    position: np.position ?? "기타",
+    shirtNumber: np.backNo ? Number(np.backNo) : undefined,
+    nationality: np.countryName,
+    photoUrl: np.profileUrl,
+  }));
+
+  // FD 성공 시: FD 정보 + (Naver 1군 squad 있으면 교체)
+  if (fdResult.ok && fdResult.data) {
+    return naverSquad.length > 0
+      ? { ...fdResult.data, squad: naverSquad }
+      : fdResult.data;
   }
-  return detail;
+
+  // FD 실패 시: Naver 데이터로 최소 페이지 구성 (FD-rate-limit 대응)
+  if (naverSquad.length > 0) {
+    return {
+      id: teamId,
+      name: "팀 정보",
+      shortName: "팀",
+      tla: "",
+      crestUrl: "",
+      squad: naverSquad,
+    };
+  }
+
+  // 둘 다 실패 → 호출자에서 notFound 처리
+  throw new Error(`fetchTeamDetailEnriched: no data for team ${teamId}`);
 }
 
 export async function fetchGroupStandings(code: LeagueCode) {
@@ -82,9 +105,38 @@ export async function fetchTeamFixtures(teamId: number) {
   });
 }
 
-export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 30) {
-  const videos = await youtube().getRecentVideos({ maxResults });
-  return filterByTeam(videos, team);
+export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 50) {
+  const capped = Math.min(maxResults, 50);
+
+  // 두 사용자-지정 채널의 최근 영상 중 팀명 매칭 (안정적, 적은 결과)
+  const channelVideos = await youtube()
+    .getRecentVideos({ maxResults: capped })
+    .catch(() => [] as HighlightVideo[]);
+  const channelFiltered = filterByTeam(channelVideos, team);
+
+  // 결과가 충분하면 그것만. 부족하면 YouTube 전체 검색으로 보강 (quota 절약)
+  if (channelFiltered.length >= 10) return channelFiltered;
+
+  const koMap = (await import("@/data/team-korean-names.json")).default as Array<{
+    id: number;
+    query: string;
+  }>;
+  const koreanName = koMap.find((t) => t.id === team.id)?.query;
+  const query = `${koreanName ?? team.shortName ?? team.name} 하이라이트`;
+  const searchVideos = await youtube()
+    .searchByQuery(query, 20)
+    .catch(() => [] as HighlightVideo[]);
+  const searchFiltered = filterByTeam(searchVideos, team);
+
+  const seen = new Set<string>();
+  const combined: HighlightVideo[] = [];
+  for (const v of [...channelFiltered, ...searchFiltered]) {
+    if (seen.has(v.videoId)) continue;
+    seen.add(v.videoId);
+    combined.push(v);
+  }
+  combined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return combined;
 }
 
 export async function fetchFootballHighlights(maxResults = 24) {

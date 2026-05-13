@@ -56,7 +56,7 @@ export default async function TeamPage({ params }: PageProps) {
 
   const [fixtures, videos] = await Promise.all([
     fetchTeamFixtures(id).catch(() => []),
-    fetchTeamHighlights(team, 40).catch(() => []),
+    fetchTeamHighlights(team, 50).catch(() => []),
   ]);
 
   const nameMap = await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(
@@ -132,6 +132,15 @@ export default async function TeamPage({ params }: PageProps) {
           </div>
         </section>
 
+        {/* Team highlights — 팀 정보 바로 아래 */}
+        <HighlightStrip
+          videos={videos}
+          layout="grid"
+          limit={12}
+          title={`${team.shortName ?? team.name} 최근 하이라이트`}
+          emptyStateQuery={`${team.shortName ?? team.name} 하이라이트`}
+        />
+
         {/* Recent + upcoming */}
         <UpcomingFixtures fixtures={fixtures} />
 
@@ -179,8 +188,6 @@ export default async function TeamPage({ params }: PageProps) {
           )}
         </section>
 
-        {/* Team highlights */}
-        <HighlightStrip videos={videos} />
       </main>
       <Footer />
     </div>

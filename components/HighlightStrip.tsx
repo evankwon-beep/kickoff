@@ -4,13 +4,26 @@ import type { HighlightVideo } from "@/lib/dataSource/types";
 const COUPANG_CHANNEL_URL = "https://www.youtube.com/@CoupangPlaySports";
 const SPOTV_CHANNEL_URL = "https://www.youtube.com/@SPOTV";
 
-function EmptyState() {
+function EmptyState({ searchQuery }: { searchQuery?: string }) {
+  const ytSearchUrl = searchQuery
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+    : null;
   return (
     <div className="border border-dashed border-[var(--color-border)] rounded-xl p-5 text-sm text-[var(--color-muted)]">
       <p className="mb-3">
-        가져올 수 있는 축구 하이라이트가 아직 없어요. 유튜브 채널에서 직접 확인해보세요.
+        가져올 수 있는 축구 하이라이트가 아직 없어요. 유튜브에서 직접 확인해보세요.
       </p>
       <div className="flex flex-wrap gap-2">
+        {ytSearchUrl && (
+          <a
+            href={ytSearchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-accent)] text-[var(--color-on-accent,#0a0a0b)] font-bold hover:opacity-90 transition-opacity"
+          >
+            🔍 YouTube에서 {searchQuery} 검색
+          </a>
+        )}
         <a
           href={SPOTV_CHANNEL_URL}
           target="_blank"
@@ -32,18 +45,37 @@ function EmptyState() {
   );
 }
 
-export function HighlightStrip({ videos }: { videos: HighlightVideo[] }) {
+interface Props {
+  videos: HighlightVideo[];
+  layout?: "scroll" | "grid";
+  limit?: number;
+  title?: string;
+  /** 빈 상태일 때 YouTube 검색 링크에 쓸 키워드 (보통 팀 한국어명) */
+  emptyStateQuery?: string;
+}
+
+export function HighlightStrip({
+  videos,
+  layout = "scroll",
+  limit = 12,
+  title = "최근 하이라이트",
+  emptyStateQuery,
+}: Props) {
   return (
     <section className="kickoff-card p-5">
       <h2 className="section-title text-xl mb-3">
-        최근 하이라이트{" "}
+        {title}{" "}
         <span className="text-[var(--color-muted)] text-sm font-normal ml-1">쿠팡플레이 스포츠 · SPOTV</span>
       </h2>
       {videos.length === 0 ? (
-        <EmptyState />
+        <EmptyState searchQuery={emptyStateQuery} />
+      ) : layout === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {videos.slice(0, limit).map((v) => <HighlightCard key={v.videoId} video={v} />)}
+        </div>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-thin">
-          {videos.slice(0, 12).map((v) => <HighlightCard key={v.videoId} video={v} />)}
+          {videos.slice(0, limit).map((v) => <HighlightCard key={v.videoId} video={v} />)}
         </div>
       )}
     </section>
