@@ -11,6 +11,7 @@ import {
   fetchTeamFixtures,
   fetchTeamHighlights,
 } from "@/lib/dataSource";
+import { resolvePlayerNames } from "@/lib/playerNameMapper";
 
 export const revalidate = 3600;
 
@@ -52,11 +53,13 @@ export default async function TeamPage({ params }: PageProps) {
     fetchTeamHighlights(team, 40).catch(() => []),
   ]);
 
+  const nameMap = await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(() => ({} as Record<string, string>));
+
   // Group squad by position bucket
   const groups: Record<string, typeof team.squad> = {};
   for (const p of team.squad) {
     const bucket = POSITION_LABEL[p.position] ?? p.position ?? "기타";
-    (groups[bucket] ??= []).push(p);
+    (groups[bucket] ??= []).push({ ...p, name: nameMap[p.name] ?? p.name });
   }
   const order = ["골키퍼", "수비", "미드필더", "공격", "기타"];
 
