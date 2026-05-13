@@ -13,6 +13,7 @@ import {
   fetchTeamHighlights,
 } from "@/lib/dataSource";
 import { resolvePlayerNames } from "@/lib/playerNameMapper";
+import { koreanTeamName, koreanCountry } from "@/lib/i18n";
 
 export const revalidate = 3600;
 
@@ -95,7 +96,7 @@ export default async function TeamPage({ params }: PageProps) {
             />
           )}
           <div className="min-w-0">
-            <h1 className="font-bold text-2xl">{team.name}</h1>
+            <h1 className="font-bold text-2xl">{koreanTeamName(team.id, team.name)}</h1>
             <p className="text-sm text-[var(--color-muted)] mt-1">
               {team.founded && `창단 ${team.founded}`}
               {team.venue && ` · 홈구장 ${team.venue}`}
@@ -176,7 +177,7 @@ export default async function TeamPage({ params }: PageProps) {
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-semibold truncate">{p.name}</p>
                               <p className="text-xs text-[var(--color-muted)]">
-                                {[p.nationality, ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
+                                {[koreanCountry(p.nationality), ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
                               </p>
                             </div>
                           </li>
