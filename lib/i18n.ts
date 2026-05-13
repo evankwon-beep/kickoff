@@ -18,20 +18,30 @@ for (const t of TEAMS) {
 const COUNTRIES = countryData as Record<string, string>;
 
 /**
- * 팀 ID 또는 영문 이름으로 한국어 표기를 찾습니다. 없으면 입력값 그대로.
+ * 팀 ID 또는 영문 이름으로 한국어 표기를 찾습니다.
+ * 클럽 팀이 매핑 안 됐을 때는 국가팀(월드컵 등) 매핑도 시도합니다.
+ * 둘 다 없으면 입력값 그대로.
  */
 export function koreanTeamName(
   teamIdOrName: number | string,
   fallback?: string
 ): string {
   if (typeof teamIdOrName === "number") {
-    return TEAM_BY_ID.get(teamIdOrName)?.query ?? fallback ?? String(teamIdOrName);
+    const clubMatch = TEAM_BY_ID.get(teamIdOrName)?.query;
+    if (clubMatch) return clubMatch;
+    // 국가팀 fallback: fallback 영문명을 koreanCountry로 시도
+    if (fallback) {
+      const ko = COUNTRIES[fallback];
+      if (ko) return ko;
+    }
+    return fallback ?? String(teamIdOrName);
   }
-  return (
-    TEAM_BY_NAME.get(teamIdOrName.toLowerCase())?.query ??
-    fallback ??
-    teamIdOrName
-  );
+  const clubByName = TEAM_BY_NAME.get(teamIdOrName.toLowerCase())?.query;
+  if (clubByName) return clubByName;
+  // 영문 이름이 국가일 수도 (예: "Mexico", "South Korea")
+  const countryMatch = COUNTRIES[teamIdOrName];
+  if (countryMatch) return countryMatch;
+  return fallback ?? teamIdOrName;
 }
 
 /**
