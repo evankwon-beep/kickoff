@@ -64,37 +64,78 @@ function extractOgImage(html: string): string | null {
   return null;
 }
 
-async function fetchArticleImage(url: string): Promise<string | null> {
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+async function fetchHtml(url: string, timeoutMs: number): Promise<string | null> {
   try {
-    // 1.5초 타임아웃: 느린 기사 사이트가 페이지 전체를 지연시키지 않도록
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 1500);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
+      headers: {
+        "User-Agent": BROWSER_UA,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      },
       redirect: "follow",
       signal: controller.signal,
-      // 12시간 캐시
       next: { revalidate: 43200 },
     } as RequestInit);
     clearTimeout(timer);
     if (!res.ok) return null;
-    const text = await res.text();
-    const img = extractOgImage(text);
-    if (!img) return null;
-    // 상대 경로면 절대 경로로
-    if (img.startsWith("//")) return `https:${img}`;
-    if (img.startsWith("/")) {
-      try {
-        const u = new URL(url);
-        return `${u.origin}${img}`;
-      } catch {
-        return null;
-      }
-    }
-    return img;
+    return await res.text();
   } catch {
     return null;
   }
+}
+
+function extractCanonicalLink(html: string): string | null {
+  // Google News의 articles 페이지에 실제 기사 URL이 <a href> 또는 <link rel="canonical"> 형태로 존재
+  const canonical = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i);
+  if (canonical) return canonical[1];
+  // og:url도 시도
+  const ogUrl = html.match(/<meta\s+property=["']og:url["']\s+content=["']([^"']+)["']/i);
+  if (ogUrl) return ogUrl[1];
+  return null;
+}
+
+async function fetchArticleImage(url: string): Promise<string | null> {
+  // 1차: 주어진 URL fetch (Google News URL 또는 직접 기사 URL)
+  const html = await fetchHtml(url, 3500);
+  if (!html) return null;
+
+  // 1차에서 OG 이미지 찾기
+  let img = extractOgImage(html);
+  let baseUrl = url;
+
+  // Google News 경유 URL이면 실제 기사로 한 번 더 가서 더 정확한 OG 가져옴
+  if (!img || /news\.google\.com|googleusercontent\.com/.test(img)) {
+    const canonical = extractCanonicalLink(html);
+    if (canonical && !/news\.google\.com/.test(canonical)) {
+      const realHtml = await fetchHtml(canonical, 3500);
+      if (realHtml) {
+        const realImg = extractOgImage(realHtml);
+        if (realImg) {
+          img = realImg;
+          baseUrl = canonical;
+        }
+      }
+    }
+  }
+
+  if (!img) return null;
+
+  // 상대 경로 절대 URL로
+  if (img.startsWith("//")) return `https:${img}`;
+  if (img.startsWith("/")) {
+    try {
+      const u = new URL(baseUrl);
+      return `${u.origin}${img}`;
+    } catch {
+      return null;
+    }
+  }
+  return img;
 }
 
 async function enrichWithImages(items: NewsItem[]): Promise<NewsItem[]> {
