@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TeamBadge } from "./TeamBadge";
 import { computeTitleRace } from "@/lib/leagueTitleRace";
+import { LEAGUE_LOGOS } from "@/lib/leagueLogos";
 import type { Standings, LeagueCode } from "@/lib/dataSource/types";
 
 interface Props {
@@ -41,9 +42,20 @@ export function LeagueStandingsCard({ standings, topN = 6, hideHeader = false }:
     <div className="kickoff-card p-4 min-w-[220px]">
       {!hideHeader && (
         <>
-          <div className="flex items-baseline justify-between mb-1.5">
-            <h3 className="font-extrabold text-lg tracking-tight">{title}</h3>
-            <span className="text-[10px] uppercase text-[var(--color-muted)] tracking-widest">{standings.season}</span>
+          <div className="flex items-center justify-between mb-1.5 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              {LEAGUE_LOGOS[standings.leagueCode] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={LEAGUE_LOGOS[standings.leagueCode]}
+                  alt=""
+                  className="w-6 h-6 object-contain shrink-0"
+                  loading="lazy"
+                />
+              )}
+              <h3 className="font-extrabold text-lg tracking-tight truncate">{title}</h3>
+            </div>
+            <span className="text-[10px] uppercase text-[var(--color-muted)] tracking-widest shrink-0">{standings.season}</span>
           </div>
           {raceBadge ? (
             <p className={`text-[11px] font-bold mb-3 ${raceBadge.tone}`}>{raceBadge.label}</p>
