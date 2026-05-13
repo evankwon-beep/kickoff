@@ -1,8 +1,17 @@
 import { HighlightCard } from "./HighlightCard";
 import type { HighlightVideo } from "@/lib/dataSource/types";
 
-const COUPANG_CHANNEL_URL = "https://www.youtube.com/@CoupangPlaySports";
-const SPOTV_CHANNEL_URL = "https://www.youtube.com/@SPOTV";
+// 채널 내 검색 URL — q가 있으면 그 키워드로 채널 검색, 없으면 채널 홈
+function spotvUrl(q?: string) {
+  return q
+    ? `https://www.youtube.com/@SPOTV/search?query=${encodeURIComponent(q)}`
+    : "https://www.youtube.com/@SPOTV";
+}
+function coupangUrl(q?: string) {
+  return q
+    ? `https://www.youtube.com/@CoupangPlaySports/search?query=${encodeURIComponent(q)}`
+    : "https://www.youtube.com/@CoupangPlaySports";
+}
 
 function EmptyState({ searchQuery }: { searchQuery?: string }) {
   const ytSearchUrl = searchQuery
@@ -25,20 +34,20 @@ function EmptyState({ searchQuery }: { searchQuery?: string }) {
           </a>
         )}
         <a
-          href={SPOTV_CHANNEL_URL}
+          href={spotvUrl(searchQuery)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50 transition-colors text-[var(--color-text)] font-semibold"
         >
-          ▶ SPOTV 채널
+          ▶ SPOTV에서 {searchQuery ? `${searchQuery} 검색` : "채널 보기"}
         </a>
         <a
-          href={COUPANG_CHANNEL_URL}
+          href={coupangUrl(searchQuery)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50 transition-colors text-[var(--color-text)] font-semibold"
         >
-          ▶ 쿠팡플레이 스포츠 채널
+          ▶ 쿠팡플레이에서 {searchQuery ? `${searchQuery} 검색` : "채널 보기"}
         </a>
       </div>
     </div>
