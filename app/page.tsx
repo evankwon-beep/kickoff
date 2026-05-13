@@ -5,6 +5,7 @@ import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 import { HighlightStrip } from "@/components/HighlightStrip";
 import { StaleDataNotice } from "@/components/StaleDataNotice";
 import { MajorTournamentsBanner } from "@/components/MajorTournamentsBanner";
+import { LeagueMarketValueSection } from "@/components/LeagueMarketValueSection";
 import { selectActiveTournaments } from "@/lib/majorTournaments";
 import {
   fetchTop4Standings,
@@ -41,8 +42,12 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <UpcomingFixtures fixtures={fixtures} />
+        {/* 새 섹션: 리그별 몸값 TOP 5 */}
+        <LeagueMarketValueSection />
+
+        {/* 순서 변경: 하이라이트 먼저, 경기 일정 나중 */}
         <HighlightStrip videos={videos} />
+        <UpcomingFixtures fixtures={fixtures} />
       </main>
       <Footer />
     </div>
