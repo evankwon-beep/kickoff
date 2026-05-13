@@ -4,7 +4,7 @@ import { FootballDataSource } from "./footballData";
 import { YoutubeHighlightSource } from "./youtube";
 import { matchHighlights } from "@/lib/highlightMatcher";
 import { tagKoreanFixtures } from "@/lib/koreanPlayers";
-import { filterFootballHighlights } from "@/lib/highlightFilter";
+import { filterFootballHighlights, filterByTeam } from "@/lib/highlightFilter";
 import type { Fixture, LeagueCode, Standings, HighlightVideo } from "./types";
 
 const TOP4: LeagueCode[] = ["PL", "PD", "BL1", "SA"];
@@ -57,6 +57,11 @@ export async function fetchTeamFixtures(teamId: number) {
     daysPast: 14,
     daysFuture: 14,
   });
+}
+
+export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 30) {
+  const videos = await youtube().getRecentVideos({ maxResults });
+  return filterByTeam(videos, team);
 }
 
 export async function fetchFootballHighlights(maxResults = 24) {
