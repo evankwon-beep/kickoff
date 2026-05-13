@@ -22,6 +22,9 @@ function applyTheme(team: FavoriteTeam | null) {
     html.style.removeProperty("--color-accent");
     html.style.removeProperty("--color-accent-deep");
     html.style.removeProperty("--color-on-accent");
+    html.style.removeProperty("--color-pitch");
+    html.style.removeProperty("--color-pitch-2");
+    html.style.removeProperty("--gradient-pitch");
     if (bg) bg.style.display = "none";
     return;
   }
@@ -30,6 +33,15 @@ function applyTheme(team: FavoriteTeam | null) {
   html.style.setProperty("--color-accent", theme.primary);
   html.style.setProperty("--color-accent-deep", theme.primaryDeep);
   html.style.setProperty("--color-on-accent", theme.text);
+
+  // 메인 hero 그라데이션 (잔디 그린)을 팀 색으로 교체
+  // primaryDeep을 짙은 톤으로 사용 — 너무 밝으면 본문 텍스트 가독성 해침
+  html.style.setProperty("--color-pitch", theme.primaryDeep);
+  html.style.setProperty("--color-pitch-2", theme.primaryDeep);
+  html.style.setProperty(
+    "--gradient-pitch",
+    `radial-gradient(1200px 280px at 50% -120px, color-mix(in oklab, ${theme.primary} 22%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in oklab, ${theme.primaryDeep} 70%, var(--color-bg)) 0%, var(--color-bg) 70%)`
+  );
 
   if (!bg) {
     bg = document.createElement("div");
