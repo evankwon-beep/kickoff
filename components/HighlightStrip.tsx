@@ -1,8 +1,8 @@
 import { HighlightCard } from "./HighlightCard";
 import type { HighlightVideo } from "@/lib/dataSource/types";
 
-const COUPANG_CHANNEL_URL = "https://www.youtube.com/channel/UCjn-VbcIkAeXQKCmLJV8YwQ";
-const SPOTV_CHANNEL_URL = "https://www.youtube.com/channel/UC3Gk2_hnSDLEz0k_TJb6l2w";
+const COUPANG_CHANNEL_URL = "https://www.youtube.com/@CoupangPlaySports";
+const SPOTV_CHANNEL_URL = "https://www.youtube.com/@SPOTV";
 
 function EmptyState() {
   return (
@@ -17,7 +17,7 @@ function EmptyState() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50 transition-colors text-[var(--color-text)] font-semibold"
         >
-          ▶ SPOTV NOW 채널
+          ▶ SPOTV 채널
         </a>
         <a
           href={COUPANG_CHANNEL_URL}
@@ -25,7 +25,7 @@ function EmptyState() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50 transition-colors text-[var(--color-text)] font-semibold"
         >
-          ▶ 쿠팡플레이 채널
+          ▶ 쿠팡플레이 스포츠 채널
         </a>
       </div>
     </div>
@@ -37,7 +37,7 @@ export function HighlightStrip({ videos }: { videos: HighlightVideo[] }) {
     <section className="kickoff-card p-5">
       <h2 className="section-title text-xl mb-3">
         최근 하이라이트{" "}
-        <span className="text-[var(--color-muted)] text-sm font-normal ml-1">쿠팡플레이 · SPOTV</span>
+        <span className="text-[var(--color-muted)] text-sm font-normal ml-1">쿠팡플레이 스포츠 · SPOTV</span>
       </h2>
       {videos.length === 0 ? (
         <EmptyState />

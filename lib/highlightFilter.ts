@@ -1,33 +1,53 @@
 import type { HighlightVideo, Team } from "./dataSource/types";
 
-// Football keywords (Korean + English). Title must contain at least one.
-const FOOTBALL_KEYWORDS = [
+// "하이라이트" 의미 키워드 — 풀경기 하이라이트 영상에 거의 항상 들어감.
+const HIGHLIGHT_KEYWORDS = [
   "하이라이트", "highlight", "highlights",
-  "골", "goal", "goals",
-  "축구", "football", "soccer",
+  "골 모음", "goals", "전체 골",
+];
+
+// 축구 리그 / 대회 키워드 — 제목에 적어도 하나 있어야 함.
+const FOOTBALL_LEAGUE_KEYWORDS = [
   "epl", "프리미어리그", "premier league",
   "라리가", "la liga", "laliga",
   "분데스", "bundesliga",
   "세리에", "serie a",
   "챔피언스", "champions league", "ucl",
-  "유로파", "europa", "uel",
-  "fa컵", "fa cup",
-  "월드컵", "world cup",
-  "vs.", " vs ", "대",
+  "유로파", "europa league", "uel",
+  "컨퍼런스", "conference league",
+  "fa cup", "fa컵",
+  "월드컵", "world cup", "fifa",
+  "유로", "euro 20", "euros",
+  "코파", "copa america",
+  "아시안컵", "afc asian cup", "afc cup",
+  "리그앙", "ligue 1",
+  "에레디비지에", "eredivisie",
+  "친선", "friendly",
 ];
 
-// Common non-football content keywords that should disqualify a video even if
-// the channel sometimes posts football.
+// 다른 스포츠 / 비스포츠 — 하이라이트가 있어도 제외.
 const EXCLUDE_KEYWORDS = [
+  // 다른 스포츠
+  "mlb", "nba", "kbo", "ufc",
+  "야구", "농구", "배구", "골프", "테니스", "복싱",
+  "baseball", "basketball", "volleyball", "tennis", "boxing", "golf",
+  // 국내(K리그) 제외 — 해외 축구만 보고 싶음
+  "k리그", "kleague", "k-league", "klassic", "k1리그", "k2리그",
+  // 부수 콘텐츠 (경기 영상이 아님)
+  "프리뷰", "preview", "리뷰", "review", "분석", "인터뷰",
+  "토론", "토크", "talk", "단신", "vlog", "비하인드",
+  "주요장면", // 보통 농구/야구의 short clip
+  // 비스포츠
   "snl", "드라마", "예능", "코미디", "예고편",
   "movie", "드라마티즈", "토크쇼", "키즈",
-  "[로맨스", "[봉주르", "성수", "한가인",
 ];
 
 function looksLikeFootball(title: string): boolean {
   const lower = title.toLowerCase();
   if (EXCLUDE_KEYWORDS.some((k) => lower.includes(k.toLowerCase()))) return false;
-  return FOOTBALL_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
+  const hasHighlight = HIGHLIGHT_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
+  const hasFootballLeague = FOOTBALL_LEAGUE_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
+  return hasHighlight && hasFootballLeague;
 }
 
 export function filterFootballHighlights(videos: HighlightVideo[]): HighlightVideo[] {
