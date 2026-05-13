@@ -20,33 +20,63 @@ function relativeTime(iso: string): string {
   return `${diffW}주 전`;
 }
 
+function faviconUrl(domain: string | undefined, source: string): string {
+  if (domain) return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
+  // domain 없으면 기본 placeholder (회색 박스)
+  return "";
+}
+
 function NewsList({ items }: { items: NewsItem[] }) {
   if (items.length === 0) {
     return <p className="text-[var(--color-muted)] py-3 text-sm">아직 가져올 뉴스가 없어요.</p>;
   }
   return (
     <ul className="space-y-2">
-      {items.map((n, idx) => (
-        <li
-          key={`${n.link}-${idx}`}
-          className="border border-[var(--color-border)] rounded-lg p-3 hover:border-[var(--color-accent)]/40 transition-colors"
-        >
-          <a href={n.link} target="_blank" rel="noopener noreferrer" className="block group">
-            <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
-              {n.title}
-            </p>
-            <p className="text-xs text-[var(--color-muted)] mt-1.5 flex items-center gap-2">
-              <span>{n.source}</span>
-              {n.publishedAt && (
-                <>
-                  <span>·</span>
-                  <span>{relativeTime(n.publishedAt)}</span>
-                </>
-              )}
-            </p>
-          </a>
-        </li>
-      ))}
+      {items.map((n, idx) => {
+        const fav = faviconUrl(n.sourceDomain, n.source);
+        return (
+          <li
+            key={`${n.link}-${idx}`}
+            className="border border-[var(--color-border)] rounded-lg overflow-hidden hover:border-[var(--color-accent)]/40 transition-colors"
+          >
+            <a
+              href={n.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-stretch gap-3 p-3 group"
+            >
+              <div className="shrink-0 w-10 h-10 rounded-md bg-[var(--color-surface-2)] flex items-center justify-center overflow-hidden">
+                {fav ? (
+                  // 일반 img 태그 (next/image는 외부 도메인 화이트리스트 필요 + 작은 favicon용)
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={fav}
+                    alt=""
+                    className="w-7 h-7 object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="text-[var(--color-muted)] text-xs">📰</span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
+                  {n.title}
+                </p>
+                <p className="text-xs text-[var(--color-muted)] mt-1 flex items-center gap-2">
+                  <span className="truncate">{n.source}</span>
+                  {n.publishedAt && (
+                    <>
+                      <span>·</span>
+                      <span className="whitespace-nowrap">{relativeTime(n.publishedAt)}</span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }

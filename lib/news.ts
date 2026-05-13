@@ -5,11 +5,22 @@ export interface NewsItem {
   link: string;
   source: string;
   publishedAt: string;
+  /** 출처 사이트의 도메인 (favicon URL 구성용). 없을 수 있음. */
+  sourceDomain?: string;
 }
 
 function cdata(s: string | undefined): string {
   if (!s) return "";
   return s.replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "").trim();
+}
+
+function extractDomain(url: string | undefined): string {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
 }
 
 function parseGoogleNewsRss(xml: string): NewsItem[] {
@@ -20,12 +31,16 @@ function parseGoogleNewsRss(xml: string): NewsItem[] {
     const link = cdata(raw.match(/<link>([\s\S]*?)<\/link>/)?.[1]);
     const pubDate = cdata(raw.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]);
     const source = cdata(raw.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]);
+    // source 태그의 url 속성에서 진짜 출처 도메인 추출 (favicon용)
+    const sourceUrl = raw.match(/<source\s+url="([^"]+)"/)?.[1] ?? "";
+    const domain = extractDomain(sourceUrl);
     if (title && link) {
       items.push({
         title,
         link,
         source: source || "Google News",
         publishedAt: pubDate ? new Date(pubDate).toISOString() : "",
+        sourceDomain: domain,
       });
     }
   }
