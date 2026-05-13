@@ -17,15 +17,15 @@ export function MatchRow({ fixture }: Props) {
       <Link href={`/team/${fixture.home.id}`} className="flex items-center justify-end gap-2 min-w-0 hover:text-[var(--color-accent)] transition-colors">
         <TeamBadge team={fixture.home} size={22} />
       </Link>
-      <div className="text-center font-mono">
+      <div className="text-center">
         {isFinished ? (
-          <span className="text-base font-bold tabular-nums">
-            <span>{fixture.score.home}</span>
-            <span className="mx-1 text-[var(--color-muted)]">:</span>
-            <span>{fixture.score.away}</span>
+          <span className="inline-flex items-baseline gap-1 px-2.5 py-1 rounded-md bg-[var(--color-bg)]/60 border border-[var(--color-border)]">
+            <span className="text-base font-extrabold tabular-nums font-mono">{fixture.score.home}</span>
+            <span className="text-xs text-[var(--color-muted)]">:</span>
+            <span className="text-base font-extrabold tabular-nums font-mono">{fixture.score.away}</span>
           </span>
         ) : (
-          <span className="text-[var(--color-muted)] text-xs font-semibold tracking-widest">VS</span>
+          <span className="text-[var(--color-muted)] text-[11px] font-bold tracking-[0.2em]">VS</span>
         )}
       </div>
       <Link href={`/team/${fixture.away.id}`} className="flex items-center gap-2 min-w-0 hover:text-[var(--color-accent)] transition-colors">

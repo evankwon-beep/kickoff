@@ -13,8 +13,12 @@
   --color-surface-2: #1c1c25;
   --color-accent-deep: #6fcc1f;
   --color-pitch: #0d2818;
+  --color-pitch-2: #052017;
+  --color-pitch-line: rgba(182, 255, 60, 0.08);
   --shadow-card: 0 8px 24px -8px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-glow: 0 0 0 1px var(--color-accent), 0 8px 32px -8px color-mix(in oklab, var(--color-accent) 35%, transparent);
+  --shadow-pitch-glow: 0 16px 60px -20px color-mix(in oklab, var(--color-accent) 25%, transparent);
+  --gradient-pitch: radial-gradient(1200px 280px at 50% -120px, color-mix(in oklab, var(--color-accent) 18%, transparent), transparent 60%), linear-gradient(180deg, var(--color-pitch-2) 0%, var(--color-bg) 70%);
   --font-display: "Pretendard Variable", "Inter", system-ui, sans-serif;
 }
 
@@ -26,34 +30,75 @@ html, body {
 }
 
 .kickoff-card {
-  background: var(--color-surface);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-surface-2) 80%, transparent) 0%, var(--color-surface) 100%);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow: var(--shadow-card);
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.kickoff-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-accent) 70%, transparent), transparent);
+  opacity: 0.6;
+  pointer-events: none;
 }
 .kickoff-card:hover {
-  border-color: color-mix(in oklab, var(--color-accent) 40%, var(--color-border));
-  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--color-accent) 50%, var(--color-border));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-pitch-glow);
 }
+
 .kickoff-hero {
-  background:
-    radial-gradient(800px 200px at 50% -40px, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent),
-    linear-gradient(180deg, color-mix(in oklab, var(--color-pitch) 60%, var(--color-surface)) 0%, var(--color-bg) 70%);
+  background: var(--gradient-pitch);
+  position: relative;
 }
+.kickoff-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 64px, var(--color-pitch-line) 64px 65px),
+    repeating-linear-gradient(180deg, transparent 0 64px, var(--color-pitch-line) 64px 65px);
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 50%);
+  pointer-events: none;
+}
+
 .section-title {
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7em;
 }
 .section-title::before {
   content: "";
   display: inline-block;
-  width: 4px;
-  height: 1em;
-  background: var(--color-accent);
-  vertical-align: -0.12em;
-  margin-right: 0.55em;
-  border-radius: 2px;
+  width: 5px;
+  height: 1.1em;
+  background: linear-gradient(180deg, var(--color-accent), var(--color-accent-deep));
+  border-radius: 3px;
+  box-shadow: 0 0 16px color-mix(in oklab, var(--color-accent) 50%, transparent);
+}
+
+.pitch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 25%, transparent);
 }
 
 * {

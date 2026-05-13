@@ -11,39 +11,48 @@ function timeLabel(t: ActiveTournament): string {
 }
 
 function Card({ t }: { t: ActiveTournament }) {
+  const accent = t.state === "ongoing" ? "var(--color-accent)" : "var(--color-gold)";
   const inner = (
-    <div className="group flex items-center gap-3 bg-gradient-to-r from-[#1a1530] via-[var(--color-surface)] to-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-gold)]/60 rounded-2xl px-4 py-3 transition-colors relative overflow-hidden">
-      <div aria-hidden className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[var(--color-gold)] to-[var(--color-accent)] opacity-60 group-hover:opacity-100 transition-opacity" />
-      <span className="text-2xl pl-1" aria-hidden>{t.icon}</span>
+    <div
+      className="group relative flex items-center gap-4 rounded-2xl px-5 py-4 transition-all border border-[var(--color-border)] hover:border-[color-mix(in_oklab,var(--color-gold)_60%,var(--color-border))] overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, color-mix(in oklab, var(--color-pitch) 70%, var(--color-surface)) 0%, var(--color-surface) 60%)",
+      }}
+    >
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-[3px]"
+        style={{ background: `linear-gradient(180deg, ${accent}, transparent)` }}
+      />
+      <span className="text-3xl pl-1" aria-hidden>{t.icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="font-extrabold truncate">{t.nameKr}</p>
-        <p className="text-[11px] mt-0.5 font-semibold tracking-wide">
-          <span className={t.state === "ongoing" ? "text-[var(--color-accent)]" : "text-[var(--color-gold)]"}>
-            {timeLabel(t)}
-          </span>
+        <p className="font-extrabold text-base tracking-tight truncate">{t.nameKr}</p>
+        <p className="pitch-badge mt-1" style={{ background: `color-mix(in oklab, ${accent} 14%, transparent)`, color: accent, borderColor: `color-mix(in oklab, ${accent} 25%, transparent)` }}>
+          {timeLabel(t)}
         </p>
       </div>
       {t.code && (
-        <span className="text-[var(--color-muted)] group-hover:text-[var(--color-text)] transition-colors text-lg">→</span>
+        <span className="text-[var(--color-muted)] group-hover:text-[var(--color-text)] transition-colors text-xl">→</span>
       )}
     </div>
   );
 
   if (t.code) {
     return (
-      <Link key={t.id} href={`/competition/${t.code}`} className="block flex-1 min-w-[260px]">
+      <Link key={t.id} href={`/competition/${t.code}`} className="block flex-1 min-w-[280px]">
         {inner}
       </Link>
     );
   }
-  return <div key={t.id} className="flex-1 min-w-[260px]">{inner}</div>;
+  return <div key={t.id} className="flex-1 min-w-[280px]">{inner}</div>;
 }
 
 export function MajorTournamentsBanner({ tournaments }: Props) {
   if (tournaments.length === 0) return null;
   return (
     <section>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {tournaments.map((t) => <Card key={t.id} t={t} />)}
       </div>
     </section>
