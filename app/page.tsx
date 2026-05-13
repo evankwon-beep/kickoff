@@ -5,38 +5,48 @@ import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 import { HighlightStrip } from "@/components/HighlightStrip";
 import { KoreanPlayerSection } from "@/components/KoreanPlayerSection";
 import { StaleDataNotice } from "@/components/StaleDataNotice";
+import { EuropeanCompetitionPreview } from "@/components/EuropeanCompetitionPreview";
 import {
   fetchTop4Standings,
-  fetchEnrichedFixtures,
-  fetchTopHighlights,
+  fetchEnrichedFixturesByTop6,
+  fetchFootballHighlights,
+  fetchChampionsLeagueFixtures,
 } from "@/lib/dataSource";
 
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [standings, fixtures, videos] = await Promise.all([
+  const [standings, fixtures, videos, clFixtures] = await Promise.all([
     fetchTop4Standings().catch(() => []),
-    fetchEnrichedFixtures().catch(() => []),
-    fetchTopHighlights(12).catch(() => []),
+    fetchEnrichedFixturesByTop6().catch(() => []),
+    fetchFootballHighlights(16).catch(() => []),
+    fetchChampionsLeagueFixtures().catch(() => []),
   ]);
+
+  const partialFail =
+    standings.length === 0 || fixtures.length === 0 || videos.length === 0;
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 space-y-6">
-        <StaleDataNotice
-          show={standings.length === 0 || fixtures.length === 0 || videos.length === 0}
-        />
-        <UpcomingFixtures fixtures={fixtures} />
+        <StaleDataNotice show={partialFail} />
+
         <section>
-          <h2 className="font-bold text-lg mb-3">4대 리그 순위</h2>
+          <h2 className="font-bold text-xl mb-3">4대 리그 순위</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {standings.map((s) => (
               <LeagueStandingsCard key={s.leagueCode} standings={s} />
             ))}
           </div>
         </section>
+
+        <EuropeanCompetitionPreview fixtures={clFixtures} />
+
+        <UpcomingFixtures fixtures={fixtures} />
+
         <HighlightStrip videos={videos} />
+
         <KoreanPlayerSection fixtures={fixtures} />
       </main>
       <Footer />

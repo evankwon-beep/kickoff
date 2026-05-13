@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TeamBadge } from "./TeamBadge";
-import { formatRelativeKST } from "@/lib/time";
+import { formatKST } from "@/lib/time";
 import type { Fixture } from "@/lib/dataSource/types";
 
 interface Props {
@@ -10,8 +10,8 @@ interface Props {
 export function MatchRow({ fixture }: Props) {
   const isFinished = fixture.status === "FINISHED";
   return (
-    <div className="grid grid-cols-[80px_1fr_60px_1fr_auto] items-center gap-3 py-3 border-b border-[var(--color-border)] text-sm">
-      <span className="text-[var(--color-muted)]">{formatRelativeKST(fixture.utcKickoff)}</span>
+    <div className="grid grid-cols-[170px_1fr_60px_1fr_auto] items-center gap-3 py-3 border-b border-[var(--color-border)] text-sm">
+      <span className="text-[var(--color-muted)] tabular-nums whitespace-nowrap">{formatKST(fixture.utcKickoff, { withWeekday: true })}</span>
       <div className="flex items-center justify-end gap-2 min-w-0">
         <TeamBadge team={fixture.home} />
       </div>
