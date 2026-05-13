@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { PlayerPhoto } from "./PlayerPhoto";
-import { topStarsAllLeaguesWithPhotos, type LeagueStarPlayer } from "@/lib/leagueStars";
-import type { LeagueCode } from "@/lib/dataSource/types";
+import { topStarsFromTeamIds, type LeagueStarPlayer } from "@/lib/leagueStars";
+import type { LeagueCode, Standings } from "@/lib/dataSource/types";
 import { TOP4_LEAGUES } from "@/lib/dataSource/types";
+import { koreanCountry } from "@/lib/i18n";
+
+interface Props {
+  standings: Standings[];
+}
 
 function fmt(billionWon: number): string {
   if (billionWon >= 10_000) return `${(billionWon / 10_000).toFixed(1)}조`;
@@ -31,7 +36,7 @@ function StarRow({ p, rank }: { p: LeagueStarPlayer; rank: number }) {
           />
           <span className="truncate">
             {p.teamName}
-            {p.nationality ? ` · ${p.nationality}` : ""}
+            {p.nationality ? ` · ${koreanCountry(p.nationality)}` : ""}
           </span>
         </p>
       </Link>
@@ -43,11 +48,9 @@ function StarRow({ p, rank }: { p: LeagueStarPlayer; rank: number }) {
 }
 
 function LeagueCard({
-  code,
   nameKr,
   stars,
 }: {
-  code: LeagueCode;
   nameKr: string;
   stars: LeagueStarPlayer[];
 }) {
@@ -67,16 +70,25 @@ function LeagueCard({
   );
 }
 
-export async function LeagueMarketValueSection() {
-  const all = await topStarsAllLeaguesWithPhotos(5).catch(
-    () => ({} as Partial<Record<LeagueCode, LeagueStarPlayer[]>>)
-  );
+export async function LeagueMarketValueSection({ standings }: Props) {
+  // standings에서 리그별 top 6 팀 ID 추출
+  const teamsByLeague: Partial<Record<LeagueCode, number[]>> = {};
+  for (const s of standings) {
+    teamsByLeague[s.leagueCode] = s.rows.slice(0, 6).map((r) => r.team.id);
+  }
+
+  const result = await topStarsFromTeamIds(teamsByLeague, 5).catch(() => ({}));
+
   return (
     <section>
       <h2 className="section-title text-xl mb-3">리그별 몸값 TOP 5</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {TOP4_LEAGUES.map((l) => (
-          <LeagueCard key={l.code} code={l.code} nameKr={l.nameKr} stars={all[l.code] ?? []} />
+          <LeagueCard
+            key={l.code}
+            nameKr={l.nameKr}
+            stars={(result as Partial<Record<LeagueCode, LeagueStarPlayer[]>>)[l.code] ?? []}
+          />
         ))}
       </div>
     </section>

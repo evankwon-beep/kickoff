@@ -97,7 +97,97 @@ export function topByLeague(league: LeagueCode, n = 5): LeagueStarPlayer[] {
   return unique;
 }
 
-/** 4대 리그 각각 top N + 네이버 사진/국적 보강. ISR 1시간 캐시. */
+// 매핑 JSON에서 lookup (normalize / prefix 매칭까지 시도)
+function lookupValueFlexible(playerName: string): number | null {
+  const trimmed = playerName.trim();
+  if (!trimmed) return null;
+  const raw = (marketValues as Record<string, unknown>)[trimmed];
+  if (typeof raw === "number" && raw > 0) return raw;
+  const normalized = trimmed.replace(/[\s·-]/g, "");
+  for (const [k, val] of Object.entries(marketValues as Record<string, unknown>)) {
+    if (typeof val !== "number" || val <= 0) continue;
+    if (k.replace(/[\s·-]/g, "") === normalized) return val;
+  }
+  // prefix 매칭 (2글자 이내 차이)
+  for (const [k, val] of Object.entries(marketValues as Record<string, unknown>)) {
+    if (typeof val !== "number" || val <= 0) continue;
+    if (!k.startsWith("_")) {
+      if (
+        (k.startsWith(trimmed) || trimmed.startsWith(k)) &&
+        Math.abs(k.length - trimmed.length) <= 2
+      ) {
+        return val;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * 4대 리그 top 6 팀의 Naver squad를 가져와서 매핑 JSON과 매칭.
+ * 네이버 이름을 기준으로 photoUrl/국적이 자동으로 같이 매칭됨.
+ */
+export async function topStarsFromTeamIds(
+  teamsByLeague: Partial<Record<LeagueCode, number[]>>,
+  n = 5
+): Promise<Partial<Record<LeagueCode, LeagueStarPlayer[]>>> {
+  // 팀 ID → 리그 코드 + 한국어 팀명 매핑 만들기
+  const idToInfo = new Map<number, { league: LeagueCode; teamName: string }>();
+  for (const [league, ids] of Object.entries(teamsByLeague) as [LeagueCode, number[] | undefined][]) {
+    if (!ids) continue;
+    for (const id of ids) {
+      // 섹션 매핑에서 팀명 찾기
+      const sec = Object.values(SECTION).find((s) => s.teamId === id);
+      idToInfo.set(id, { league, teamName: sec?.teamName ?? `팀 ${id}` });
+    }
+  }
+
+  // 각 팀 Naver squad 병렬 fetch
+  const squadByTeam = new Map<number, Awaited<ReturnType<typeof fetchNaverSquad>>>();
+  await Promise.all(
+    Array.from(idToInfo.keys()).map(async (id) => {
+      try {
+        squadByTeam.set(id, await fetchNaverSquad(id));
+      } catch {
+        squadByTeam.set(id, null);
+      }
+    })
+  );
+
+  // 모든 선수를 (네이버 이름 기준) 한 줄로 모으고 시장가치 매칭
+  const allPlayers: LeagueStarPlayer[] = [];
+  for (const [teamId, squad] of squadByTeam.entries()) {
+    if (!squad) continue;
+    const info = idToInfo.get(teamId);
+    if (!info) continue;
+    for (const np of squad) {
+      const value = lookupValueFlexible(np.name);
+      if (value == null) continue;
+      allPlayers.push({
+        name: np.name,
+        teamId,
+        teamName: info.teamName,
+        league: info.league,
+        valueBillionWon: value,
+        crestUrl: `https://crests.football-data.org/${teamId}.png`,
+        photoUrl: np.profileUrl,
+        nationality: np.countryName,
+      });
+    }
+  }
+
+  // 리그별 top N
+  const result: Partial<Record<LeagueCode, LeagueStarPlayer[]>> = {};
+  for (const league of new Set(allPlayers.map((p) => p.league))) {
+    result[league] = allPlayers
+      .filter((p) => p.league === league)
+      .sort((a, b) => b.valueBillionWon - a.valueBillionWon)
+      .slice(0, n);
+  }
+  return result;
+}
+
+/** (기존 fallback) 매핑 JSON만으로 top N — 사진 없음. */
 export async function topStarsAllLeaguesWithPhotos(
   n = 5
 ): Promise<Partial<Record<LeagueCode, LeagueStarPlayer[]>>> {

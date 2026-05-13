@@ -42,8 +42,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* 새 섹션: 리그별 몸값 TOP 5 */}
-        <LeagueMarketValueSection />
+        {/* 새 섹션: 리그별 몸값 TOP 5 (standings에서 top 6 팀 추출 후 Naver squad 매칭) */}
+        <LeagueMarketValueSection standings={standings} />
 
         {/* 순서 변경: 하이라이트 먼저, 경기 일정 나중 */}
         <HighlightStrip videos={videos} />
