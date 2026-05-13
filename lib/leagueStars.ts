@@ -204,15 +204,17 @@ export async function topStarsFromTeamIds(
 }
 
 /**
- * 매핑 JSON 시장가치 기준 리그별 top N + 등장한 팀의 Naver squad에서 photoUrl 매칭.
- * standings(리그 순위)와 무관 — 순수 시장가치만으로 ranking.
+ * 매핑 JSON 시장가치 기준 리그별 top N + Naver squad에서 photoUrl 매칭.
+ * squad에 실제로 없는 선수(이적/은퇴 등)는 제외 — 사진 없는 phantom 방지.
  */
 export async function topByLeagueWithPhotos(
   league: LeagueCode,
   n = 5
 ): Promise<LeagueStarPlayer[]> {
-  const stars = topByLeague(league, n);
-  const teamIds = new Set(stars.map((s) => s.teamId));
+  // 후보 풀: 더 많이 뽑아둠. 매칭 실패 후 채우기 위함
+  const candidates = topByLeague(league, n * 4);
+  const teamIds = new Set(candidates.map((s) => s.teamId));
+
   const squads = new Map<number, Awaited<ReturnType<typeof fetchNaverSquad>>>();
   await Promise.all(
     Array.from(teamIds).map(async (id) => {
@@ -224,25 +226,38 @@ export async function topByLeagueWithPhotos(
     })
   );
 
-  return stars.map((star) => {
-    const squad = squads.get(star.teamId);
-    if (!squad) return star;
-    const matched =
-      // 1) 정확 매칭
-      squad.find((p) => p.name === star.name) ||
-      // 2) prefix/normalize 매칭
-      squad.find((p) => looksLikeSamePlayer(p.name, star.name)) ||
-      // 3) 토큰(공백 분리) 단위 매칭 - 한 토큰이라도 같으면 OK
+  function matchSquad(squad: NonNullable<Awaited<ReturnType<typeof fetchNaverSquad>>>, name: string) {
+    return (
+      squad.find((p) => p.name === name) ||
+      squad.find((p) => looksLikeSamePlayer(p.name, name)) ||
       squad.find((p) => {
-        const aTokens = star.name.split(/\s+/).filter((t) => t.length >= 2);
+        const aTokens = name.split(/\s+/).filter((t) => t.length >= 2);
         const bTokens = p.name.split(/\s+/).filter((t) => t.length >= 2);
-        // 양쪽이 공유하는 토큰이 1개 이상 + 길이 차이 작음
-        return aTokens.some((t) => bTokens.includes(t)) && Math.abs(star.name.length - p.name.length) <= 5;
-      });
-    return matched
-      ? { ...star, photoUrl: matched.profileUrl, nationality: matched.countryName }
-      : star;
-  });
+        return aTokens.some((t) => bTokens.includes(t)) && Math.abs(name.length - p.name.length) <= 5;
+      })
+    );
+  }
+
+  const result: LeagueStarPlayer[] = [];
+  const usedPlayerNames = new Set<string>(); // squad 매칭 후 같은 사람 중복 방지
+  for (const star of candidates) {
+    if (result.length >= n) break;
+    const squad = squads.get(star.teamId);
+    if (!squad) continue; // squad 못 가져오면 제외 (사진 없는 phantom 방지)
+    const matched = matchSquad(squad, star.name);
+    if (!matched) continue; // squad에 실제로 없으면 제외 (이적한 선수 등)
+    // 같은 squad 선수가 다른 매핑 키로 이미 등록됐으면 skip
+    const playerKey = `${star.teamId}::${matched.name}`;
+    if (usedPlayerNames.has(playerKey)) continue;
+    usedPlayerNames.add(playerKey);
+    result.push({
+      ...star,
+      name: matched.name, // 표시 이름은 네이버 정확 표기로 통일
+      photoUrl: matched.profileUrl,
+      nationality: matched.countryName,
+    });
+  }
+  return result;
 }
 
 export async function topAllLeaguesByValue(
