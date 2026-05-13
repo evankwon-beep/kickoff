@@ -16,6 +16,7 @@ import {
 import { fetchTeamNewsByType } from "@/lib/news";
 import { resolvePlayerNames } from "@/lib/playerNameMapper";
 import { koreanTeamName, koreanCountry } from "@/lib/i18n";
+import { lookupMarketValue, formatKRWMarketValue } from "@/lib/marketValue";
 
 export const revalidate = 3600;
 
@@ -187,21 +188,24 @@ export default async function TeamPage({ params }: PageProps) {
                               </span>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold truncate">{p.name}</p>
+                              <div className="flex items-baseline gap-1.5 flex-wrap">
+                                <p className="text-sm font-semibold truncate">{p.name}</p>
+                                {(() => {
+                                  const mv = lookupMarketValue(p.name);
+                                  return mv ? (
+                                    <span
+                                      className="text-[11px] font-bold text-[var(--color-gold)] tabular-nums whitespace-nowrap"
+                                      title="추정 시장가치 (Transfermarkt 기준)"
+                                    >
+                                      약 {formatKRWMarketValue(mv)}
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </div>
                               <p className="text-xs text-[var(--color-muted)]">
                                 {[koreanCountry(p.nationality), ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
                               </p>
                             </div>
-                            <a
-                              href={`https://www.google.com/search?q=${encodeURIComponent(p.name + " " + team.name + " transfermarkt")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="shrink-0 text-base hover:scale-110 transition-transform"
-                              title={`${p.name} 시장가치 (Transfermarkt 검색)`}
-                              aria-label={`${p.name} 시장가치 보기`}
-                            >
-                              💰
-                            </a>
                           </li>
                         ))}
                     </ul>
