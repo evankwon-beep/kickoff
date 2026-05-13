@@ -136,15 +136,24 @@ export async function fetchCompetitionHighlights(
 }
 
 export async function fetchCompetitionFixtures(code: LeagueCode) {
-  const [fixtures, videos] = await Promise.all([
-    football().getRecentAndUpcomingFixtures({
+  let fixtures: Fixture[];
+  try {
+    fixtures = await football().getRecentAndUpcomingFixtures({
       leagueCodes: [code],
       daysPast: 14,
-      daysFuture: 30,
-    }),
-    youtube().getRecentVideos({ maxResults: 30 }),
-  ]);
-  return tagKoreanFixtures(matchHighlights(fixtures, videos));
+      daysFuture: 60,
+    });
+  } catch {
+    return [];
+  }
+  let enriched = fixtures;
+  try {
+    const videos = await youtube().getRecentVideos({ maxResults: 30 });
+    enriched = matchHighlights(fixtures, videos);
+  } catch {
+    // Youtube 실패해도 fixtures는 반환
+  }
+  return tagKoreanFixtures(enriched);
 }
 
 export async function fetchChampionsLeagueFixtures(): Promise<Fixture[]> {

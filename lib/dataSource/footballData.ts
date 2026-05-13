@@ -120,16 +120,25 @@ export class FootballDataSource implements DataSource {
     const dateFrom = from.toISOString().slice(0, 10);
     const dateTo = to.toISOString().slice(0, 10);
 
+    // Single-competition: use per-competition endpoint (handles longer ranges)
+    if (opts.leagueCodes.length === 1) {
+      const code = opts.leagueCodes[0];
+      const params = new URLSearchParams({ dateFrom, dateTo });
+      const data = await this.fetchJson<{ matches: FdMatch[] }>(
+        `/competitions/${code}/matches?${params.toString()}`
+      );
+      return data.matches.map(mapMatch);
+    }
+
+    // Multi-competition: /v4/matches with competitions filter (free tier limits range to ~10 days)
     const params = new URLSearchParams({
       competitions: opts.leagueCodes.join(","),
       dateFrom,
       dateTo,
     });
-
     const data = await this.fetchJson<{ matches: FdMatch[] }>(
       `/matches?${params.toString()}`
     );
-
     return data.matches.map(mapMatch);
   }
 
