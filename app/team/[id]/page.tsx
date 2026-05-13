@@ -7,11 +7,13 @@ import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 import { HighlightStrip } from "@/components/HighlightStrip";
 import { PlayerPhoto } from "@/components/PlayerPhoto";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { TeamNewsSection } from "@/components/TeamNewsSection";
 import {
   fetchTeamDetail,
   fetchTeamFixtures,
   fetchTeamHighlights,
 } from "@/lib/dataSource";
+import { fetchTeamNews } from "@/lib/news";
 import { resolvePlayerNames } from "@/lib/playerNameMapper";
 import { koreanTeamName, koreanCountry } from "@/lib/i18n";
 
@@ -55,9 +57,12 @@ export default async function TeamPage({ params }: PageProps) {
     notFound();
   }
 
-  const [fixtures, videos] = await Promise.all([
+  const teamKoreanName = koreanTeamName(team.id, team.shortName ?? team.name);
+
+  const [fixtures, videos, news] = await Promise.all([
     fetchTeamFixtures(id).catch(() => []),
     fetchTeamHighlights(team, 50).catch(() => []),
+    fetchTeamNews(teamKoreanName, 10).catch(() => []),
   ]);
 
   const nameMap = await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(
@@ -138,9 +143,12 @@ export default async function TeamPage({ params }: PageProps) {
           videos={videos}
           layout="scroll"
           limit={12}
-          title={`${koreanTeamName(team.id, team.shortName ?? team.name)} 최근 하이라이트`}
-          emptyStateQuery={`${koreanTeamName(team.id, team.shortName ?? team.name)} 하이라이트`}
+          title={`${teamKoreanName} 최근 하이라이트`}
+          emptyStateQuery={`${teamKoreanName} 하이라이트`}
         />
+
+        {/* Team news — 하이라이트 바로 아래 */}
+        <TeamNewsSection teamName={teamKoreanName} news={news} />
 
         {/* Recent + upcoming */}
         <UpcomingFixtures fixtures={fixtures} />
