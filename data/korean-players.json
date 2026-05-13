@@ -1,0 +1,7 @@
+[
+  { "id": "son-heung-min", "name": "손흥민", "nameEn": "Son Heung-min", "teamId": 73, "teamName": "Tottenham Hotspur", "position": "FW" },
+  { "id": "lee-kang-in", "name": "이강인", "nameEn": "Lee Kang-in", "teamId": 524, "teamName": "Paris Saint-Germain", "position": "MF" },
+  { "id": "kim-min-jae", "name": "김민재", "nameEn": "Kim Min-jae", "teamId": 5, "teamName": "Bayern Munich", "position": "DF" },
+  { "id": "hwang-hee-chan", "name": "황희찬", "nameEn": "Hwang Hee-chan", "teamId": 76, "teamName": "Wolverhampton Wanderers", "position": "FW" },
+  { "id": "hwang-in-beom", "name": "황인범", "nameEn": "Hwang In-beom", "teamId": 78, "teamName": "Feyenoord", "position": "MF" }
+]
