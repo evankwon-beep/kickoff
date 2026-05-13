@@ -3,31 +3,26 @@ import { Footer } from "@/components/Footer";
 import { LeagueStandingsCard } from "@/components/LeagueStandingsCard";
 import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 import { HighlightStrip } from "@/components/HighlightStrip";
-import { KoreanPlayerSection } from "@/components/KoreanPlayerSection";
 import { StaleDataNotice } from "@/components/StaleDataNotice";
-import { EuropeanCompetitionPreview } from "@/components/EuropeanCompetitionPreview";
 import { MajorTournamentsBanner } from "@/components/MajorTournamentsBanner";
 import { selectActiveTournaments } from "@/lib/majorTournaments";
 import {
   fetchTop4Standings,
   fetchEnrichedFixturesByTop6,
   fetchFootballHighlights,
-  fetchChampionsLeagueFixtures,
 } from "@/lib/dataSource";
 
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [standings, fixtures, videos, clFixtures] = await Promise.all([
+  const [standings, fixtures, videos] = await Promise.all([
     fetchTop4Standings().catch(() => []),
     fetchEnrichedFixturesByTop6().catch(() => []),
     fetchFootballHighlights(16).catch(() => []),
-    fetchChampionsLeagueFixtures().catch(() => []),
   ]);
 
   const partialFail =
     standings.length === 0 || fixtures.length === 0 || videos.length === 0;
-
   const activeTournaments = selectActiveTournaments();
 
   return (
@@ -46,13 +41,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <EuropeanCompetitionPreview fixtures={clFixtures} />
-
         <UpcomingFixtures fixtures={fixtures} />
-
         <HighlightStrip videos={videos} />
-
-        <KoreanPlayerSection fixtures={fixtures} />
       </main>
       <Footer />
     </div>
