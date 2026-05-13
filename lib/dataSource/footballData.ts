@@ -1,4 +1,4 @@
-import type { DataSource, LeagueCode, Standings, Fixture } from "./types";
+import type { DataSource, LeagueCode, Standings, Fixture, TeamDetail } from "./types";
 
 const BASE = "https://api.football-data.org/v4";
 
@@ -105,6 +105,53 @@ export class FootballDataSource implements DataSource {
 
     return data.matches.map(mapMatch);
   }
+
+  async getTeam(id: number): Promise<TeamDetail> {
+    const data = await this.fetchJson<FdTeamDetail>(`/teams/${id}`);
+    return {
+      id: data.id,
+      name: data.name,
+      shortName: data.shortName ?? data.name,
+      tla: data.tla ?? "",
+      crestUrl: data.crest ?? "",
+      founded: data.founded,
+      venue: data.venue,
+      clubColors: data.clubColors,
+      coach: data.coach
+        ? { name: data.coach.name, nationality: data.coach.nationality }
+        : null,
+      squad: (data.squad ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        position: p.position ?? "",
+        shirtNumber: p.shirtNumber,
+        nationality: p.nationality,
+        dateOfBirth: p.dateOfBirth,
+      })),
+      runningCompetitions: (data.runningCompetitions ?? []).map((c) => ({
+        code: c.code,
+        name: c.name,
+      })),
+    };
+  }
+
+  async getRecentAndUpcomingFixturesForTeam(opts: {
+    teamId: number;
+    daysPast: number;
+    daysFuture: number;
+  }): Promise<Fixture[]> {
+    const now = new Date();
+    const from = new Date(now.getTime() - opts.daysPast * 86_400_000);
+    const to = new Date(now.getTime() + opts.daysFuture * 86_400_000);
+    const params = new URLSearchParams({
+      dateFrom: from.toISOString().slice(0, 10),
+      dateTo: to.toISOString().slice(0, 10),
+    });
+    const data = await this.fetchJson<{ matches: FdMatch[] }>(
+      `/teams/${opts.teamId}/matches?${params.toString()}`
+    );
+    return data.matches.map(mapMatch);
+  }
 }
 
 interface FdMatch {
@@ -115,6 +162,27 @@ interface FdMatch {
   homeTeam: FdTeam;
   awayTeam: FdTeam;
   score: { fullTime: { home: number | null; away: number | null } };
+}
+
+interface FdTeamDetail {
+  id: number;
+  name: string;
+  shortName?: string;
+  tla?: string;
+  crest?: string;
+  founded?: number;
+  venue?: string;
+  clubColors?: string;
+  coach?: { name: string; nationality?: string } | null;
+  squad?: Array<{
+    id: number;
+    name: string;
+    position?: string;
+    shirtNumber?: number;
+    nationality?: string;
+    dateOfBirth?: string;
+  }>;
+  runningCompetitions?: Array<{ code: string; name: string }>;
 }
 
 function mapMatch(m: FdMatch): Fixture {

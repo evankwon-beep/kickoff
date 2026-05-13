@@ -64,6 +64,24 @@ export interface HighlightVideo {
   thumbnailUrl: string;
 }
 
+export interface SquadMember {
+  id: number;
+  name: string;
+  position: string;       // e.g. "Goalkeeper", "Defence"
+  shirtNumber?: number;
+  nationality?: string;
+  dateOfBirth?: string;
+}
+
+export interface TeamDetail extends Team {
+  founded?: number;
+  venue?: string;
+  clubColors?: string;
+  coach?: { name: string; nationality?: string } | null;
+  squad: SquadMember[];
+  runningCompetitions?: { code: string; name: string }[];
+}
+
 export interface DataSource {
   getStandings(leagueCode: LeagueCode): Promise<Standings>;
   getRecentAndUpcomingFixtures(opts: {
@@ -71,6 +89,8 @@ export interface DataSource {
     daysPast: number;
     daysFuture: number;
   }): Promise<Fixture[]>;
+  getTeam(id: number): Promise<TeamDetail>;
+  getRecentAndUpcomingFixturesForTeam(opts: { teamId: number; daysPast: number; daysFuture: number }): Promise<Fixture[]>;
 }
 
 export interface HighlightSource {

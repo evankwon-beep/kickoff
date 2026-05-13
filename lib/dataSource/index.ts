@@ -4,6 +4,7 @@ import { FootballDataSource } from "./footballData";
 import { YoutubeHighlightSource } from "./youtube";
 import { matchHighlights } from "@/lib/highlightMatcher";
 import { tagKoreanFixtures } from "@/lib/koreanPlayers";
+import { filterFootballHighlights } from "@/lib/highlightFilter";
 import type { Fixture, LeagueCode, Standings, HighlightVideo } from "./types";
 
 const TOP4: LeagueCode[] = ["PL", "PD", "BL1", "SA"];
@@ -46,4 +47,35 @@ export async function fetchTopHighlights(maxResults = 12): Promise<HighlightVide
   return youtube().getRecentVideos({ maxResults });
 }
 
-export type { Fixture, Standings, LeagueCode, HighlightVideo } from "./types";
+export async function fetchTeamDetail(teamId: number) {
+  return football().getTeam(teamId);
+}
+
+export async function fetchTeamFixtures(teamId: number) {
+  return football().getRecentAndUpcomingFixturesForTeam({
+    teamId,
+    daysPast: 14,
+    daysFuture: 14,
+  });
+}
+
+export async function fetchFootballHighlights(maxResults = 24) {
+  const all = await youtube().getRecentVideos({ maxResults });
+  return filterFootballHighlights(all);
+}
+
+// Filter the existing fetchEnrichedFixtures by top-N teams across TOP4 leagues.
+export async function fetchEnrichedFixturesByTop6(): Promise<Fixture[]> {
+  // Fetch standings to learn each league's top-6 team ids
+  const standings = await fetchTop4Standings();
+  const topTeamIds = new Set<number>();
+  for (const s of standings) {
+    for (const row of s.rows.slice(0, 6)) topTeamIds.add(row.team.id);
+  }
+  const enriched = await fetchEnrichedFixtures();
+  return enriched.filter(
+    (f) => topTeamIds.has(f.home.id) || topTeamIds.has(f.away.id)
+  );
+}
+
+export type { Fixture, Standings, LeagueCode, HighlightVideo, TeamDetail, SquadMember } from "./types";

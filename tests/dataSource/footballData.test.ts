@@ -82,3 +82,51 @@ describe("FootballDataSource.getRecentAndUpcomingFixtures", () => {
     expect(fixtures[1].status).toBe("FINISHED");
   });
 });
+
+const teamFixture = {
+  id: 73,
+  name: "Tottenham Hotspur FC",
+  shortName: "Tottenham",
+  tla: "TOT",
+  crest: "https://crests.football-data.org/73.png",
+  founded: 1882,
+  venue: "Tottenham Hotspur Stadium",
+  clubColors: "Navy Blue / White",
+  coach: { name: "Ange Postecoglou", nationality: "Australia" },
+  squad: [
+    { id: 3754, name: "Heung-min Son", position: "Offence", shirtNumber: 7, nationality: "South Korea", dateOfBirth: "1992-07-08" },
+    { id: 7888, name: "Guglielmo Vicario", position: "Goalkeeper", shirtNumber: 13, nationality: "Italy" },
+  ],
+  runningCompetitions: [
+    { code: "PL", name: "Premier League" },
+    { code: "EL", name: "UEFA Europa League" },
+  ],
+};
+
+describe("FootballDataSource.getTeam", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => teamFixture,
+    })));
+  });
+
+  it("calls /teams/{id} and maps detail", async () => {
+    const ds = new FootballDataSource("test-token");
+    const t = await ds.getTeam(73);
+    expect((fetch as any).mock.calls[0][0]).toBe(
+      "https://api.football-data.org/v4/teams/73"
+    );
+    expect(t.id).toBe(73);
+    expect(t.tla).toBe("TOT");
+    expect(t.founded).toBe(1882);
+    expect(t.coach?.name).toBe("Ange Postecoglou");
+    expect(t.squad).toHaveLength(2);
+    expect(t.squad[0]).toMatchObject({ id: 3754, shirtNumber: 7, nationality: "South Korea" });
+    expect(t.runningCompetitions).toEqual([
+      { code: "PL", name: "Premier League" },
+      { code: "EL", name: "UEFA Europa League" },
+    ]);
+  });
+});
