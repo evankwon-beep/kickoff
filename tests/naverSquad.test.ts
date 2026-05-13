@@ -3,7 +3,7 @@ import { fetchNaverSquad } from "@/lib/naverSquad";
 
 const SAMPLE_HTML = `
   ... lots of html ...
-  "squad":[{"name":"손흥민","profileUrl":"https://sports-phinf.pstatic.net/player/wfootball/default/123.png","countryId":"KOR","countryName":"대한민국"},{"name":"해리 케인","profileUrl":"https://sports-phinf.pstatic.net/player/wfootball/default/456.png","countryId":"ENG","countryName":"잉글랜드"}]
+  "squad":[{"name":"손흥민","position":"FW","positionName":"공격수","backNo":"7","countryId":"KOR","countryName":"대한민국"},{"name":"해리 케인","position":"FW","positionName":"공격수","backNo":"9","countryId":"ENG","countryName":"잉글랜드"}]
   ... more html ...
 `;
 
@@ -26,7 +26,8 @@ describe("fetchNaverSquad", () => {
     expect(squad!).toHaveLength(2);
     expect(squad![0]).toMatchObject({
       name: "손흥민",
-      profileUrl: expect.stringContaining("/123.png"),
+      position: "FW",
+      backNo: "7",
       countryName: "대한민국",
     });
   });

@@ -6,6 +6,9 @@ interface NaverPlayer {
   profileUrl?: string;
   countryId?: string;
   countryName?: string;
+  position?: string;       // "GK" | "DF" | "MF" | "FW"
+  positionName?: string;   // "골키퍼" | "수비수" | "미드필더" | "공격수"
+  backNo?: string;         // shirt number as string; empty if youth/reserve
 }
 
 interface TeamMapEntry {
@@ -32,12 +35,12 @@ function extractSquadJson(html: string): NaverPlayer[] | null {
     const arr = JSON.parse(m[1]) as NaverPlayer[];
     return arr;
   } catch {
-    // Fallback: extract names+profileUrl pairs via regex
+    // Fallback: regex-extract structured fields when JSON.parse fails
     const items: NaverPlayer[] = [];
-    const re = /"name":"([^"]+)"[^{]*?"profileUrl":"([^"]+)"/g;
+    const re = /"name":"([^"]+)"[\s\S]*?"position":"([^"]*)"[\s\S]*?"positionName":"([^"]*)"[\s\S]*?"backNo":"([^"]*)"/g;
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(m[1])) !== null) {
-      items.push({ name: mm[1], profileUrl: mm[2] });
+      items.push({ name: mm[1], position: mm[2], positionName: mm[3], backNo: mm[4] });
     }
     return items.length > 0 ? items : null;
   }

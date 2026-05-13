@@ -12,7 +12,7 @@ interface FdTeam {
 
 interface FdStandingsResponse {
   season: { startDate: string; endDate: string };
-  standings: { type: string; table: FdTableRow[] }[];
+  standings: { type: string; group?: string; table: FdTableRow[] }[];
 }
 
 interface FdTableRow {
@@ -80,6 +80,33 @@ export class FootballDataSource implements DataSource {
       })),
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  async getGroupStandings(leagueCode: LeagueCode): Promise<{ group: string; standings: Standings }[]> {
+    const data = await this.fetchJson<FdStandingsResponse>(
+      `/competitions/${leagueCode}/standings`
+    );
+    const groups = data.standings.filter((s) => s.type === "TOTAL" && s.group);
+    return groups.map((g) => ({
+      group: g.group!,
+      standings: {
+        leagueCode,
+        season: seasonLabel(data.season.startDate, data.season.endDate),
+        rows: g.table.map((r) => ({
+          position: r.position,
+          team: mapTeam(r.team),
+          playedGames: r.playedGames,
+          won: r.won,
+          draw: r.draw,
+          lost: r.lost,
+          points: r.points,
+          goalsFor: r.goalsFor,
+          goalsAgainst: r.goalsAgainst,
+          goalDifference: r.goalDifference,
+        })),
+        updatedAt: new Date().toISOString(),
+      },
+    }));
   }
 
   async getRecentAndUpcomingFixtures(opts: {

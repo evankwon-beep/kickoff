@@ -85,6 +85,7 @@ export interface TeamDetail extends Team {
 
 export interface DataSource {
   getStandings(leagueCode: LeagueCode): Promise<Standings>;
+  getGroupStandings(leagueCode: LeagueCode): Promise<{ group: string; standings: Standings }[]>;
   getRecentAndUpcomingFixtures(opts: {
     leagueCodes: LeagueCode[];
     daysPast: number;

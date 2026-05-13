@@ -6,6 +6,8 @@ import type { Standings, LeagueCode } from "@/lib/dataSource/types";
 interface Props {
   standings: Standings;
   topN?: number;
+  /** When true, the header (league name + season) is suppressed because the parent renders it. */
+  hideHeader?: boolean;
 }
 
 const nameByCode: Record<LeagueCode, string> = {
@@ -26,7 +28,7 @@ function positionAccent(position: number, totalTeams: number): string {
   return "text-[var(--color-muted)]";
 }
 
-export function LeagueStandingsCard({ standings, topN = 6 }: Props) {
+export function LeagueStandingsCard({ standings, topN = 6, hideHeader = false }: Props) {
   const title = nameByCode[standings.leagueCode] ?? standings.leagueCode;
   const race = computeTitleRace(standings);
   const totalTeams = standings.rows.length;
@@ -41,15 +43,17 @@ export function LeagueStandingsCard({ standings, topN = 6 }: Props) {
         aria-hidden
         className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-accent)]/40 to-transparent"
       />
-      <div className="flex items-baseline justify-between mb-1">
-        <h3 className="font-extrabold text-lg tracking-tight">{title}</h3>
-        <span className="text-[10px] uppercase text-[var(--color-muted)] tracking-widest">{standings.season}</span>
-      </div>
-      {raceBadge ? (
+      {!hideHeader && (
+        <div className="flex items-baseline justify-between mb-1">
+          <h3 className="font-extrabold text-lg tracking-tight">{title}</h3>
+          <span className="text-[10px] uppercase text-[var(--color-muted)] tracking-widest">{standings.season}</span>
+        </div>
+      )}
+      {!hideHeader && (raceBadge ? (
         <p className={`text-xs font-bold mb-3 ${raceBadge.tone}`}>{raceBadge.label}</p>
       ) : (
         <div className="mb-3" />
-      )}
+      ))}
       <ol className="space-y-1.5">
         {standings.rows.slice(0, topN).map((r) => (
           <li key={r.team.id} className="flex items-center gap-2 text-sm">

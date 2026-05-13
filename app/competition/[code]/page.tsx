@@ -4,7 +4,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 import { LeagueStandingsCard } from "@/components/LeagueStandingsCard";
-import { fetchCompetition, fetchCompetitionFixtures } from "@/lib/dataSource";
+import {
+  fetchCompetition,
+  fetchCompetitionFixtures,
+  fetchGroupStandings,
+} from "@/lib/dataSource";
 import type { LeagueCode } from "@/lib/dataSource/types";
 import { MAJOR_TOURNAMENTS } from "@/lib/majorTournaments";
 
@@ -32,8 +36,10 @@ export default async function CompetitionPage({ params }: PageProps) {
   const code = raw as LeagueCode;
   if (!VALID.includes(code)) notFound();
 
-  const [standings, fixtures] = await Promise.all([
-    fetchCompetition(code),
+  const isGroupStage = code === "WC" || code === "CL"; // future: detect dynamically
+  const [singleStandings, groups, fixtures] = await Promise.all([
+    isGroupStage ? Promise.resolve(null) : fetchCompetition(code),
+    isGroupStage ? fetchGroupStandings(code) : Promise.resolve([]),
     fetchCompetitionFixtures(code).catch(() => []),
   ]);
 
@@ -54,22 +60,32 @@ export default async function CompetitionPage({ params }: PageProps) {
           )}
         </div>
 
-        {standings ? (
+        <UpcomingFixtures fixtures={fixtures} />
+
+        {groups.length > 0 ? (
           <section>
-            <h2 className="font-bold text-xl mb-3">순위표</h2>
+            <h2 className="section-title text-xl mb-3">조별 순위</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {groups.map((g) => (
+                <div key={g.group}>
+                  <h3 className="font-bold text-sm text-[var(--color-accent)] mb-2 tracking-wider uppercase">{g.group}</h3>
+                  <LeagueStandingsCard standings={g.standings} topN={4} hideHeader />
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : singleStandings ? (
+          <section>
+            <h2 className="section-title text-xl mb-3">순위표</h2>
             <div className="max-w-md">
-              <LeagueStandingsCard standings={standings} topN={Math.min(20, standings.rows.length)} />
+              <LeagueStandingsCard standings={singleStandings} topN={Math.min(20, singleStandings.rows.length)} />
             </div>
           </section>
         ) : (
-          <section className="bg-[var(--color-surface)] rounded-xl p-6 border border-[var(--color-border)]">
-            <p className="text-[var(--color-muted)]">
-              아직 순위/조 정보를 가져올 수 없어요. 토너먼트가 시작되면 표시됩니다.
-            </p>
+          <section className="kickoff-card p-6">
+            <p className="text-[var(--color-muted)]">아직 순위/조 정보를 가져올 수 없어요. 토너먼트가 시작되면 표시됩니다.</p>
           </section>
         )}
-
-        <UpcomingFixtures fixtures={fixtures} />
       </main>
       <Footer />
     </div>

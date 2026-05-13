@@ -52,16 +52,24 @@ export async function fetchTeamDetailEnriched(teamId: number): Promise<TeamDetai
   const detail = await football().getTeam(teamId);
   const naver = await fetchNaverSquad(teamId);
   if (naver && naver.length > 0) {
-    const replaced: SquadMember[] = naver.map((np, idx) => ({
-      id: idx + 1, // stable per-render id; Naver doesn't expose stable player ids cheaply
-      name: np.name,
-      position: "기타", // Naver doesn't categorize; group all under "선수단"
-      photoUrl: np.profileUrl,
-      nationality: np.countryName,
-    }));
-    return { ...detail, squad: replaced };
+    const firstTeam = naver.filter((p) => p.backNo && p.backNo.trim() !== "");
+    if (firstTeam.length > 0) {
+      const replaced: SquadMember[] = firstTeam.map((np, idx) => ({
+        id: idx + 1,
+        name: np.name,
+        position: np.position ?? "기타", // GK/DF/MF/FW
+        shirtNumber: np.backNo ? Number(np.backNo) : undefined,
+        nationality: np.countryName,
+        // explicitly do NOT set photoUrl — user requested removal
+      }));
+      return { ...detail, squad: replaced };
+    }
   }
   return detail;
+}
+
+export async function fetchGroupStandings(code: LeagueCode) {
+  return football().getGroupStandings(code).catch(() => []);
 }
 
 export { fetchTeamDetailEnriched as fetchTeamDetail };

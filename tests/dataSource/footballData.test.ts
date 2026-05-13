@@ -130,3 +130,44 @@ describe("FootballDataSource.getTeam", () => {
     ]);
   });
 });
+
+const groupFixture = {
+  competition: { code: "WC", name: "FIFA World Cup" },
+  season: { startDate: "2026-06-11", endDate: "2026-07-19" },
+  standings: [
+    {
+      type: "TOTAL",
+      group: "Group A",
+      table: [
+        { position: 1, team: { id: 770, name: "Mexico", tla: "MEX", crest: "" }, playedGames: 0, won: 0, draw: 0, lost: 0, points: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+        { position: 2, team: { id: 771, name: "South Africa", tla: "RSA", crest: "" }, playedGames: 0, won: 0, draw: 0, lost: 0, points: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+      ],
+    },
+    {
+      type: "TOTAL",
+      group: "Group B",
+      table: [
+        { position: 1, team: { id: 772, name: "South Korea", tla: "KOR", crest: "" }, playedGames: 0, won: 0, draw: 0, lost: 0, points: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+      ],
+    },
+  ],
+};
+
+describe("FootballDataSource.getGroupStandings", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true, status: 200,
+      json: async () => groupFixture,
+    })));
+  });
+
+  it("returns one entry per group with mapped standings", async () => {
+    const ds = new FootballDataSource("test-token");
+    const result = await ds.getGroupStandings("WC");
+    expect(result).toHaveLength(2);
+    expect(result[0].group).toBe("Group A");
+    expect(result[0].standings.rows).toHaveLength(2);
+    expect(result[1].group).toBe("Group B");
+    expect(result[1].standings.rows[0].team.tla).toBe("KOR");
+  });
+});

@@ -20,11 +20,16 @@ interface PageProps {
 }
 
 const POSITION_LABEL: Record<string, string> = {
+  GK: "골키퍼",
+  DF: "수비수",
+  MF: "미드필더",
+  FW: "공격수",
   Goalkeeper: "골키퍼",
-  Defence: "수비",
+  Defence: "수비수",
   Midfield: "미드필더",
-  Offence: "공격",
+  Offence: "공격수",
 };
+const POSITION_ORDER = ["골키퍼", "수비수", "미드필더", "공격수", "기타"];
 
 function ageFromBirth(iso?: string): string {
   if (!iso) return "";
@@ -53,20 +58,16 @@ export default async function TeamPage({ params }: PageProps) {
     fetchTeamHighlights(team, 40).catch(() => []),
   ]);
 
-  const usingNaver = team.squad.length > 0 && team.squad.every((p) => p.photoUrl);
-  const nameMap = usingNaver
-    ? ({} as Record<string, string>)
-    : await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(
-        () => ({} as Record<string, string>)
-      );
+  const nameMap = await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(
+    () => ({} as Record<string, string>)
+  );
 
-  // Group squad by position bucket
+  // Group squad by position bucket (GK/DF/MF/FW → 한국어 라벨)
   const groups: Record<string, typeof team.squad> = {};
   for (const p of team.squad) {
-    const bucket = POSITION_LABEL[p.position] ?? p.position ?? "기타";
+    const bucket = POSITION_LABEL[p.position] ?? "기타";
     (groups[bucket] ??= []).push({ ...p, name: nameMap[p.name] ?? p.name });
   }
-  const order = ["골키퍼", "수비", "미드필더", "공격", "기타"];
 
   const googleNewsUrl = `https://news.google.com/search?q=${encodeURIComponent(team.name + " 축구")}&hl=ko`;
 
@@ -129,89 +130,46 @@ export default async function TeamPage({ params }: PageProps) {
         <UpcomingFixtures fixtures={fixtures} />
 
         {/* Squad */}
-        <section className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)]">
-          <h2 className="font-bold text-xl mb-3">선수단</h2>
+        <section className="kickoff-card p-5">
+          <h2 className="section-title text-xl mb-3">선수단</h2>
           {team.squad.length === 0 ? (
             <p className="text-[var(--color-muted)] py-4">선수단 정보가 아직 없어요.</p>
           ) : (
-            (() => {
-              const flatMode =
-                Object.keys(groups).length === 1 && Boolean(groups["기타"]);
-              if (flatMode) {
-                return (
-                  <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {groups["기타"]!.map((p) => (
-                      <li
-                        key={p.id}
-                        className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/30 transition-colors"
-                      >
-                        {p.photoUrl ? (
-                          <Image
-                            src={p.photoUrl}
-                            alt={p.name}
-                            width={48}
-                            height={48}
-                            className="rounded-full object-cover shrink-0 bg-[var(--color-surface-2)]"
-                            unoptimized
-                          />
-                        ) : (
-                          <PlayerAvatar name={p.name} size={48} />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold truncate">{p.name}</p>
-                          <p className="text-xs text-[var(--color-muted)]">
-                            {p.nationality ?? ""}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                );
-              }
-              return (
-                <div className="space-y-4">
-                  {order
-                    .filter((bucket) => groups[bucket])
-                    .map((bucket) => (
-                      <div key={bucket}>
-                        <h3 className="text-sm font-semibold text-[var(--color-muted)] mb-2">{bucket}</h3>
-                        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                          {groups[bucket].map((p) => (
-                            <li
-                              key={p.id}
-                              className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/30 transition-colors"
-                            >
-                              {p.photoUrl ? (
-                                <Image
-                                  src={p.photoUrl}
-                                  alt={p.name}
-                                  width={40}
-                                  height={40}
-                                  className="rounded-full object-cover shrink-0"
-                                  unoptimized
-                                />
-                              ) : (
-                                <PlayerAvatar name={p.name} size={40} />
-                              )}
-                              {p.shirtNumber !== undefined && (
-                                <span className="font-mono text-xs w-7 text-center text-[var(--color-accent)] font-semibold">
-                                  {p.shirtNumber}
-                                </span>
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold truncate">{p.name}</p>
-                                <p className="text-xs text-[var(--color-muted)]">
-                                  {[p.nationality, ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
-                                </p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                </div>
-              );
-            })()
+            <div className="space-y-5">
+              {POSITION_ORDER
+                .filter((bucket) => groups[bucket])
+                .map((bucket) => (
+                  <div key={bucket}>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--color-accent)] mb-2">
+                      {bucket} <span className="text-[var(--color-muted)] font-normal normal-case">({groups[bucket].length})</span>
+                    </h3>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {groups[bucket]
+                        .slice()
+                        .sort((a, b) => (a.shirtNumber ?? 999) - (b.shirtNumber ?? 999))
+                        .map((p) => (
+                          <li
+                            key={p.id}
+                            className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/40 transition-colors"
+                          >
+                            <PlayerAvatar name={p.name} size={40} />
+                            {p.shirtNumber !== undefined && (
+                              <span className="font-mono text-xs w-7 text-center text-[var(--color-accent)] font-bold">
+                                {p.shirtNumber}
+                              </span>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold truncate">{p.name}</p>
+                              <p className="text-xs text-[var(--color-muted)]">
+                                {[p.nationality, ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
+                              </p>
+                            </div>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                ))}
+            </div>
           )}
         </section>
 
