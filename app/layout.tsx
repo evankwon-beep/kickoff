@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Kickoff — 유럽 축구 대시보드",
@@ -14,8 +15,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className="dark">
-      <body className="min-h-screen">
-        {children}
+      <body className="min-h-screen relative">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

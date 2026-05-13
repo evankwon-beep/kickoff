@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 import { HighlightStrip } from "@/components/HighlightStrip";
 import { PlayerPhoto } from "@/components/PlayerPhoto";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import {
   fetchTeamDetail,
   fetchTeamFixtures,
@@ -115,14 +116,19 @@ export default async function TeamPage({ params }: PageProps) {
                 ))}
               </div>
             )}
-            <a
-              href={googleNewsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-4 text-sm text-[var(--color-accent)] hover:underline"
-            >
-              📰 Google 뉴스에서 최근 기사 보기 ↗
-            </a>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <a
+                href={googleNewsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-sm text-[var(--color-accent)] hover:underline"
+              >
+                📰 Google 뉴스에서 최근 기사 보기 ↗
+              </a>
+              <FavoriteButton
+                team={{ id: team.id, name: team.name, crestUrl: team.crestUrl ?? "" }}
+              />
+            </div>
           </div>
         </section>
 
