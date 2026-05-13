@@ -99,43 +99,69 @@ function extractCanonicalLink(html: string): string | null {
   return null;
 }
 
+/**
+ * Microlink 무료 API로 OG 이미지 추출. robots.txt 우회 + cache.
+ * 무료 50req/day 한도지만 ISR 12h 캐시로 충분.
+ */
+async function fetchViaMicrolink(url: string): Promise<string | null> {
+  try {
+    const api = `https://api.microlink.io/?url=${encodeURIComponent(url)}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(api, {
+      signal: controller.signal,
+      next: { revalidate: 43200 },
+    } as RequestInit);
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      status?: string;
+      data?: { image?: { url?: string }; logo?: { url?: string } };
+    };
+    if (data.status !== "success") return null;
+    return data.data?.image?.url ?? data.data?.logo?.url ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchArticleImage(url: string): Promise<string | null> {
-  // 1차: 주어진 URL fetch (Google News URL 또는 직접 기사 URL)
+  // 1차: 직접 fetch (빠르고 무료 — 한국 사이트 대부분 OK)
   const html = await fetchHtml(url, 3500);
-  if (!html) return null;
+  if (html) {
+    let img = extractOgImage(html);
+    let baseUrl = url;
 
-  // 1차에서 OG 이미지 찾기
-  let img = extractOgImage(html);
-  let baseUrl = url;
-
-  // Google News 경유 URL이면 실제 기사로 한 번 더 가서 더 정확한 OG 가져옴
-  if (!img || /news\.google\.com|googleusercontent\.com/.test(img)) {
-    const canonical = extractCanonicalLink(html);
-    if (canonical && !/news\.google\.com/.test(canonical)) {
-      const realHtml = await fetchHtml(canonical, 3500);
-      if (realHtml) {
-        const realImg = extractOgImage(realHtml);
-        if (realImg) {
-          img = realImg;
-          baseUrl = canonical;
+    if (!img || /news\.google\.com|googleusercontent\.com/.test(img)) {
+      const canonical = extractCanonicalLink(html);
+      if (canonical && !/news\.google\.com/.test(canonical)) {
+        const realHtml = await fetchHtml(canonical, 3500);
+        if (realHtml) {
+          const realImg = extractOgImage(realHtml);
+          if (realImg) {
+            img = realImg;
+            baseUrl = canonical;
+          }
         }
       }
     }
-  }
 
-  if (!img) return null;
-
-  // 상대 경로 절대 URL로
-  if (img.startsWith("//")) return `https:${img}`;
-  if (img.startsWith("/")) {
-    try {
-      const u = new URL(baseUrl);
-      return `${u.origin}${img}`;
-    } catch {
-      return null;
+    if (img) {
+      if (img.startsWith("//")) return `https:${img}`;
+      if (img.startsWith("/")) {
+        try {
+          const u = new URL(baseUrl);
+          return `${u.origin}${img}`;
+        } catch {
+          return null;
+        }
+      }
+      return img;
     }
   }
-  return img;
+
+  // 2차: 직접 fetch가 실패하거나 OG 못 찾으면 Microlink 사용 (robots 우회)
+  return await fetchViaMicrolink(url);
 }
 
 async function enrichWithImages(items: NewsItem[]): Promise<NewsItem[]> {
