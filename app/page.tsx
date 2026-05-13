@@ -33,12 +33,12 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 space-y-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-8 pb-12 space-y-8 kickoff-hero rounded-b-3xl">
         <StaleDataNotice show={partialFail} />
         <MajorTournamentsBanner tournaments={activeTournaments} />
 
         <section>
-          <h2 className="font-bold text-xl mb-3">4대 리그 순위</h2>
+          <h2 className="section-title text-xl mb-3">4대 리그 순위</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {standings.map((s) => (
               <LeagueStandingsCard key={s.leagueCode} standings={s} />

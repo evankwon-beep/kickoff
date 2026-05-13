@@ -36,24 +36,31 @@ export function LeagueStandingsCard({ standings, topN = 6 }: Props) {
   else if (race.leader.kind === "magic") raceBadge = { label: `🏆 매직 ${race.leader.magicNumber}`, tone: "text-[var(--color-gold)]" };
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] min-w-[220px] hover:border-[var(--color-accent)]/40 transition-colors">
+    <div className="kickoff-card p-4 min-w-[220px] relative overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-accent)]/40 to-transparent"
+      />
       <div className="flex items-baseline justify-between mb-1">
-        <h3 className="font-bold text-base">{title}</h3>
-        <span className="text-xs text-[var(--color-muted)]">{standings.season}</span>
+        <h3 className="font-extrabold text-lg tracking-tight">{title}</h3>
+        <span className="text-[10px] uppercase text-[var(--color-muted)] tracking-widest">{standings.season}</span>
       </div>
-      {raceBadge && <p className={`text-xs font-semibold mb-3 ${raceBadge.tone}`}>{raceBadge.label}</p>}
-      {!raceBadge && <div className="mb-3" />}
-      <ol className="space-y-2">
+      {raceBadge ? (
+        <p className={`text-xs font-bold mb-3 ${raceBadge.tone}`}>{raceBadge.label}</p>
+      ) : (
+        <div className="mb-3" />
+      )}
+      <ol className="space-y-1.5">
         {standings.rows.slice(0, topN).map((r) => (
-          <li key={r.team.id} className="flex items-center gap-2 text-sm group">
-            <span className={`w-5 tabular-nums font-semibold ${positionAccent(r.position, totalTeams)}`}>{r.position}</span>
+          <li key={r.team.id} className="flex items-center gap-2 text-sm">
+            <span className={`w-6 tabular-nums font-bold ${positionAccent(r.position, totalTeams)}`}>{r.position}</span>
             <Link
               href={`/team/${r.team.id}`}
               className="flex-1 min-w-0 hover:text-[var(--color-accent)] transition-colors"
             >
-              <TeamBadge team={r.team} size={20} />
+              <TeamBadge team={r.team} size={22} />
             </Link>
-            <span className="ml-auto tabular-nums font-mono">{r.points}</span>
+            <span className="ml-auto tabular-nums font-mono text-[var(--color-text)]">{r.points}</span>
           </li>
         ))}
       </ol>

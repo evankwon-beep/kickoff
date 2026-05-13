@@ -12,18 +12,19 @@ function timeLabel(t: ActiveTournament): string {
 
 function Card({ t }: { t: ActiveTournament }) {
   const inner = (
-    <div className="group flex items-center gap-3 bg-gradient-to-r from-[#1a1530] to-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-gold)]/50 rounded-xl px-4 py-3 transition-colors">
-      <span className="text-2xl" aria-hidden>{t.icon}</span>
+    <div className="group flex items-center gap-3 bg-gradient-to-r from-[#1a1530] via-[var(--color-surface)] to-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-gold)]/60 rounded-2xl px-4 py-3 transition-colors relative overflow-hidden">
+      <div aria-hidden className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[var(--color-gold)] to-[var(--color-accent)] opacity-60 group-hover:opacity-100 transition-opacity" />
+      <span className="text-2xl pl-1" aria-hidden>{t.icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="font-semibold truncate">{t.nameKr}</p>
-        <p className="text-xs text-[var(--color-muted)] mt-0.5">
+        <p className="font-extrabold truncate">{t.nameKr}</p>
+        <p className="text-[11px] mt-0.5 font-semibold tracking-wide">
           <span className={t.state === "ongoing" ? "text-[var(--color-accent)]" : "text-[var(--color-gold)]"}>
             {timeLabel(t)}
           </span>
         </p>
       </div>
       {t.code && (
-        <span className="text-[var(--color-muted)] group-hover:text-[var(--color-text)] transition-colors">→</span>
+        <span className="text-[var(--color-muted)] group-hover:text-[var(--color-text)] transition-colors text-lg">→</span>
       )}
     </div>
   );
