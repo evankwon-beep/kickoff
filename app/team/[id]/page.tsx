@@ -188,6 +188,16 @@ export default async function TeamPage({ params }: PageProps) {
                                 {[koreanCountry(p.nationality), ageFromBirth(p.dateOfBirth)].filter(Boolean).join(" · ")}
                               </p>
                             </div>
+                            <a
+                              href={`https://www.google.com/search?q=${encodeURIComponent(p.name + " " + team.name + " transfermarkt")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 text-base hover:scale-110 transition-transform"
+                              title={`${p.name} 시장가치 (Transfermarkt 검색)`}
+                              aria-label={`${p.name} 시장가치 보기`}
+                            >
+                              💰
+                            </a>
                           </li>
                         ))}
                     </ul>

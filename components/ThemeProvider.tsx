@@ -50,7 +50,7 @@ function applyTheme(team: FavoriteTeam | null) {
     bg.style.inset = "0";
     bg.style.pointerEvents = "none";
     bg.style.zIndex = "0";
-    bg.style.opacity = "0.06";
+    bg.style.opacity = "0.03";
     bg.style.backgroundRepeat = "no-repeat";
     bg.style.backgroundPosition = "right -120px bottom -120px";
     bg.style.backgroundSize = "540px";
