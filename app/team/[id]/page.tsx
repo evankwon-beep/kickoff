@@ -136,10 +136,10 @@ export default async function TeamPage({ params }: PageProps) {
         {/* Team highlights — 팀 정보 바로 아래 */}
         <HighlightStrip
           videos={videos}
-          layout="grid"
+          layout="scroll"
           limit={12}
-          title={`${team.shortName ?? team.name} 최근 하이라이트`}
-          emptyStateQuery={`${team.shortName ?? team.name} 하이라이트`}
+          title={`${koreanTeamName(team.id, team.shortName ?? team.name)} 최근 하이라이트`}
+          emptyStateQuery={`${koreanTeamName(team.id, team.shortName ?? team.name)} 하이라이트`}
         />
 
         {/* Recent + upcoming */}
