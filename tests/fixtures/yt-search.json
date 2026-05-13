@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": { "kind": "youtube#video", "videoId": "abc123" },
+      "snippet": {
+        "publishedAt": "2026-05-12T22:30:00Z",
+        "channelTitle": "쿠팡플레이",
+        "title": "[하이라이트] 토트넘 vs 첼시 | 25-26 EPL",
+        "thumbnails": { "high": { "url": "https://i.ytimg.com/vi/abc123/hqdefault.jpg" } }
+      }
+    },
+    {
+      "id": { "kind": "youtube#video", "videoId": "def456" },
+      "snippet": {
+        "publishedAt": "2026-05-11T22:30:00Z",
+        "channelTitle": "쿠팡플레이",
+        "title": "[하이라이트] 맨시티 vs 리버풀 | 25-26 EPL",
+        "thumbnails": { "high": { "url": "https://i.ytimg.com/vi/def456/hqdefault.jpg" } }
+      }
+    }
+  ]
+}
