@@ -29,5 +29,17 @@
   "110": { "primary": "#87ceeb", "primaryDeep": "#1c2956", "text": "#0a0a0b", "name": "Lazio" },
   "102": { "primary": "#1d57a5", "primaryDeep": "#000000", "text": "#fff", "name": "Atalanta" },
   "524": { "primary": "#004170", "primaryDeep": "#da291c", "text": "#fff", "name": "PSG" },
+  "546": { "primary": "#fdb913", "primaryDeep": "#cc0000", "text": "#0a0a0b", "name": "RC Lens" },
+  "521": { "primary": "#d4112c", "primaryDeep": "#1a3a8a", "text": "#fff", "name": "Lille OSC" },
+  "523": { "primary": "#003d7a", "primaryDeep": "#da291c", "text": "#fff", "name": "Lyon" },
+  "529": { "primary": "#c8102e", "primaryDeep": "#000000", "text": "#fff", "name": "Rennes" },
+  "516": { "primary": "#1ba0db", "primaryDeep": "#0c4e7c", "text": "#fff", "name": "Marseille" },
+  "548": { "primary": "#cc0000", "primaryDeep": "#ffffff", "text": "#fff", "name": "AS Monaco" },
+  "576": { "primary": "#0066b3", "primaryDeep": "#ffffff", "text": "#fff", "name": "Strasbourg" },
+  "522": { "primary": "#c8102e", "primaryDeep": "#000000", "text": "#fff", "name": "OGC Nice" },
+  "547": { "primary": "#7b1fa2", "primaryDeep": "#000000", "text": "#fff", "name": "Toulouse" },
+  "532": { "primary": "#fdb913", "primaryDeep": "#006a4e", "text": "#0a0a0b", "name": "Nantes" },
+  "525": { "primary": "#c8102e", "primaryDeep": "#ffffff", "text": "#fff", "name": "Reims" },
+  "545": { "primary": "#c8102e", "primaryDeep": "#ffffff", "text": "#fff", "name": "Brest" },
   "675": { "primary": "#cc0000", "primaryDeep": "#000000", "text": "#fff", "name": "Feyenoord" }
 }
