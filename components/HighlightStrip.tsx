@@ -59,8 +59,8 @@ interface Props {
   layout?: "scroll" | "grid";
   limit?: number;
   title?: string;
-  /** 빈 상태일 때 YouTube 검색 링크에 쓸 키워드 (보통 팀 한국어명) */
   emptyStateQuery?: string;
+  className?: string;
 }
 
 export function HighlightStrip({
@@ -69,9 +69,10 @@ export function HighlightStrip({
   limit = 12,
   title = "최근 하이라이트",
   emptyStateQuery,
+  className,
 }: Props) {
   return (
-    <section className="kickoff-card p-5">
+    <section className={`kickoff-card p-5 ${className ?? ""}`}>
       <h2 className="section-title text-xl mb-3">
         {title}{" "}
         <span className="text-[var(--color-muted)] text-sm font-normal ml-1">쿠팡플레이 스포츠 · SPOTV</span>

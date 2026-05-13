@@ -89,18 +89,25 @@ export default async function CompetitionPage({ params }: PageProps) {
             </div>
           </section>
         ) : singleStandings ? (
-          <section className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5">
-            <div>
-              <h2 className="section-title text-xl mb-3">순위표</h2>
-              <LeagueStandingsCard standings={singleStandings} topN={Math.min(20, singleStandings.rows.length)} />
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5 items-stretch">
+            <div className="flex flex-col">
+              <h2 className="section-title text-xl mb-3 shrink-0">순위표</h2>
+              <LeagueStandingsCard
+                standings={singleStandings}
+                topN={Math.min(20, singleStandings.rows.length)}
+                className="flex-1"
+              />
             </div>
-            <div>
+            <div className="flex flex-col">
+              {/* 하이라이트 헤더 placeholder (높이 정렬용 - 없어도 됨) */}
+              <div className="h-0 mb-3" />
               <HighlightStrip
                 videos={highlights}
                 layout="grid"
                 limit={6}
                 title={`${title} 하이라이트`}
                 emptyStateQuery={`${SEARCH_KEYWORDS[code]} 하이라이트`}
+                className="flex-1"
               />
             </div>
           </section>

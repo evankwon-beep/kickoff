@@ -9,6 +9,7 @@ interface Props {
   topN?: number;
   /** When true, the header (league name + season) is suppressed because the parent renders it. */
   hideHeader?: boolean;
+  className?: string;
 }
 
 const nameByCode: Record<LeagueCode, string> = {
@@ -29,7 +30,7 @@ function positionAccent(position: number, totalTeams: number): string {
   return "text-[var(--color-muted)]";
 }
 
-export function LeagueStandingsCard({ standings, topN = 6, hideHeader = false }: Props) {
+export function LeagueStandingsCard({ standings, topN = 6, hideHeader = false, className }: Props) {
   const title = nameByCode[standings.leagueCode] ?? standings.leagueCode;
   const race = computeTitleRace(standings);
   const totalTeams = standings.rows.length;
@@ -39,7 +40,7 @@ export function LeagueStandingsCard({ standings, topN = 6, hideHeader = false }:
   else if (race.leader.kind === "magic") raceBadge = { label: `🏆 매직 ${race.leader.magicNumber}`, tone: "text-[var(--color-gold)]" };
 
   return (
-    <div className="kickoff-card p-4 min-w-[220px]">
+    <div className={`kickoff-card p-4 min-w-[220px] ${className ?? ""}`}>
       {!hideHeader && (
         <>
           <div className="flex items-center justify-between mb-1.5 gap-2">
