@@ -107,36 +107,19 @@ export async function fetchTeamFixtures(teamId: number) {
 
 export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 50) {
   const capped = Math.min(maxResults, 50);
-
-  // 두 사용자-지정 채널의 최근 영상 중 팀명 매칭 (안정적, 적은 결과)
   const channelVideos = await youtube()
     .getRecentVideos({ maxResults: capped })
     .catch(() => [] as HighlightVideo[]);
-  const channelFiltered = filterByTeam(channelVideos, team);
+  const teamFiltered = filterByTeam(channelVideos, team);
 
-  // 결과가 충분하면 그것만. 부족하면 YouTube 전체 검색으로 보강 (quota 절약)
-  if (channelFiltered.length >= 10) return channelFiltered;
+  // 그 팀 매칭 영상이 충분하면 그대로
+  if (teamFiltered.length >= 10) return teamFiltered;
 
-  const koMap = (await import("@/data/team-korean-names.json")).default as Array<{
-    id: number;
-    query: string;
-  }>;
-  const koreanName = koMap.find((t) => t.id === team.id)?.query;
-  const query = `${koreanName ?? team.shortName ?? team.name} 하이라이트`;
-  const searchVideos = await youtube()
-    .searchByQuery(query, 20)
-    .catch(() => [] as HighlightVideo[]);
-  const searchFiltered = filterByTeam(searchVideos, team);
-
-  const seen = new Set<string>();
-  const combined: HighlightVideo[] = [];
-  for (const v of [...channelFiltered, ...searchFiltered]) {
-    if (seen.has(v.videoId)) continue;
-    seen.add(v.videoId);
-    combined.push(v);
-  }
-  combined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-  return combined;
+  // 부족하면: 그 팀 영상을 위로, 나머지 모든 축구 하이라이트(일반)도 함께 노출
+  const generalFootball = filterFootballHighlights(channelVideos);
+  const seen = new Set(teamFiltered.map((v) => v.videoId));
+  const tail = generalFootball.filter((v) => !seen.has(v.videoId));
+  return [...teamFiltered, ...tail];
 }
 
 export async function fetchFootballHighlights(maxResults = 24) {
