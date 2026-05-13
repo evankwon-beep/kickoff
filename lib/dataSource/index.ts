@@ -78,6 +78,22 @@ export async function fetchEnrichedFixturesByTop6(): Promise<Fixture[]> {
   );
 }
 
+export async function fetchCompetition(code: LeagueCode) {
+  return football().getStandings(code).catch(() => null);
+}
+
+export async function fetchCompetitionFixtures(code: LeagueCode) {
+  const [fixtures, videos] = await Promise.all([
+    football().getRecentAndUpcomingFixtures({
+      leagueCodes: [code],
+      daysPast: 14,
+      daysFuture: 30,
+    }),
+    youtube().getRecentVideos({ maxResults: 30 }),
+  ]);
+  return tagKoreanFixtures(matchHighlights(fixtures, videos));
+}
+
 export async function fetchChampionsLeagueFixtures(): Promise<Fixture[]> {
   const [fixtures, videos] = await Promise.all([
     football().getRecentAndUpcomingFixtures({

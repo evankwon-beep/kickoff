@@ -6,6 +6,8 @@ import { HighlightStrip } from "@/components/HighlightStrip";
 import { KoreanPlayerSection } from "@/components/KoreanPlayerSection";
 import { StaleDataNotice } from "@/components/StaleDataNotice";
 import { EuropeanCompetitionPreview } from "@/components/EuropeanCompetitionPreview";
+import { MajorTournamentsBanner } from "@/components/MajorTournamentsBanner";
+import { selectActiveTournaments } from "@/lib/majorTournaments";
 import {
   fetchTop4Standings,
   fetchEnrichedFixturesByTop6,
@@ -26,11 +28,14 @@ export default async function HomePage() {
   const partialFail =
     standings.length === 0 || fixtures.length === 0 || videos.length === 0;
 
+  const activeTournaments = selectActiveTournaments();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 space-y-6">
         <StaleDataNotice show={partialFail} />
+        <MajorTournamentsBanner tournaments={activeTournaments} />
 
         <section>
           <h2 className="font-bold text-xl mb-3">4대 리그 순위</h2>
