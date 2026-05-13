@@ -26,50 +26,32 @@ function NewsList({ items }: { items: NewsItem[] }) {
   }
   return (
     <ul className="space-y-2">
-      {items.map((n, idx) => {
-        const hasArticleImg = Boolean(n.imageUrl);
-        return (
-          <li
-            key={`${n.link}-${idx}`}
-            className="border border-[var(--color-border)] rounded-lg overflow-hidden hover:border-[var(--color-accent)]/40 transition-colors"
+      {items.map((n, idx) => (
+        <li
+          key={`${n.link}-${idx}`}
+          className="border border-[var(--color-border)] rounded-lg hover:border-[var(--color-accent)]/40 transition-colors"
+        >
+          <a
+            href={n.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block p-3 group"
           >
-            <a
-              href={n.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-stretch gap-3 p-3 group"
-            >
-              <div className="shrink-0 w-20 h-20 rounded-md overflow-hidden flex items-center justify-center bg-gradient-to-br from-[var(--color-surface-2)] to-[var(--color-bg)] border border-[var(--color-border)]">
-                {hasArticleImg ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={n.imageUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <span className="text-2xl opacity-50" aria-hidden>📰</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 text-left flex flex-col">
-                <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-3">
-                  {n.title}
-                </p>
-                <p className="text-xs text-[var(--color-muted)] mt-auto pt-1 flex items-center gap-2">
-                  <span className="truncate">{n.source}</span>
-                  {n.publishedAt && (
-                    <>
-                      <span>·</span>
-                      <span className="whitespace-nowrap">{relativeTime(n.publishedAt)}</span>
-                    </>
-                  )}
-                </p>
-              </div>
-            </a>
-          </li>
-        );
-      })}
+            <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
+              {n.title}
+            </p>
+            <p className="text-xs text-[var(--color-muted)] mt-2 flex items-center gap-2">
+              <span className="truncate">{n.source}</span>
+              {n.publishedAt && (
+                <>
+                  <span>·</span>
+                  <span className="whitespace-nowrap">{relativeTime(n.publishedAt)}</span>
+                </>
+              )}
+            </p>
+          </a>
+        </li>
+      ))}
     </ul>
   );
 }

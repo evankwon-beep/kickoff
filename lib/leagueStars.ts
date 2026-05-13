@@ -25,6 +25,7 @@ const SECTION: Record<string, SectionInfo> = {
   atletico: { teamId: 78, league: "PD", teamName: "AT마드리드" },
   realbetis: { teamId: 90, league: "PD", teamName: "베티스" },
   athletic: { teamId: 77, league: "PD", teamName: "아틀레틱" },
+  athleticbilbao: { teamId: 77, league: "PD", teamName: "아틀레틱 빌바오" },
   realsociedad: { teamId: 92, league: "PD", teamName: "레알 소시에다드" },
   celta: { teamId: 558, league: "PD", teamName: "셀타 비고" },
   villarreal: { teamId: 94, league: "PD", teamName: "비야레알" },
@@ -42,6 +43,10 @@ const SECTION: Record<string, SectionInfo> = {
   lazio: { teamId: 110, league: "SA", teamName: "라치오" },
   atalanta: { teamId: 102, league: "SA", teamName: "아탈란타" },
   fiorentina: { teamId: 99, league: "SA", teamName: "피오렌티나" },
+  // CL / 기타 (4대 리그 외라 league별 top 5엔 안 포함되지만 섹션 인식용)
+  psg: { teamId: 524, league: "CL", teamName: "PSG" },
+  feyenoord: { teamId: 675, league: "CL", teamName: "페예노르트" },
+  wolves: { teamId: 76, league: "PL", teamName: "울브스" },
 };
 
 export interface LeagueStarPlayer {
