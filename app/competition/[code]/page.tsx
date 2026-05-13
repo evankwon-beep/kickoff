@@ -29,6 +29,18 @@ const TITLES: Record<LeagueCode, string> = {
   FA: "FA컵",
 };
 
+// 빈 상태에서 채널/유튜브 검색에 쓸 한국어 키워드
+const SEARCH_KEYWORDS: Record<LeagueCode, string> = {
+  PL: "프리미어리그",
+  PD: "라리가",
+  BL1: "분데스리가",
+  SA: "세리에A",
+  CL: "챔피언스리그",
+  WC: "월드컵",
+  EC: "유로",
+  FA: "FA컵",
+};
+
 interface PageProps {
   params: Promise<{ code: string }>;
 }
@@ -69,7 +81,13 @@ export default async function CompetitionPage({ params }: PageProps) {
           emptyText="이 기간에 예정된 경기가 없어요."
         />
 
-        <HighlightStrip videos={highlights} />
+        <HighlightStrip
+          videos={highlights}
+          layout="grid"
+          limit={12}
+          title={`${title} 하이라이트`}
+          emptyStateQuery={`${SEARCH_KEYWORDS[code]} 하이라이트`}
+        />
 
         {groups.length > 0 ? (
           <section>
