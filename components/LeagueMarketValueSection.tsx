@@ -69,8 +69,7 @@ function LeagueCard({
 
 export async function LeagueMarketValueSection() {
   const all = await topStarsAllLeaguesWithPhotos(5).catch(
-    () =>
-      ({ PL: [], PD: [], BL1: [], SA: [] } as Record<LeagueCode, LeagueStarPlayer[]>)
+    () => ({} as Partial<Record<LeagueCode, LeagueStarPlayer[]>>)
   );
   return (
     <section>

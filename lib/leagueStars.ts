@@ -100,7 +100,7 @@ export function topByLeague(league: LeagueCode, n = 5): LeagueStarPlayer[] {
 /** 4대 리그 각각 top N + 네이버 사진/국적 보강. ISR 1시간 캐시. */
 export async function topStarsAllLeaguesWithPhotos(
   n = 5
-): Promise<Record<LeagueCode, LeagueStarPlayer[]>> {
+): Promise<Partial<Record<LeagueCode, LeagueStarPlayer[]>>> {
   const top: Record<string, LeagueStarPlayer[]> = {
     PL: topByLeague("PL", n),
     PD: topByLeague("PD", n),
@@ -157,5 +157,5 @@ export async function topStarsAllLeaguesWithPhotos(
     }
   }
 
-  return top as Record<LeagueCode, LeagueStarPlayer[]>;
+  return top as Partial<Record<LeagueCode, LeagueStarPlayer[]>>;
 }
