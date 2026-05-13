@@ -22,7 +22,7 @@ function StarRow({ p, rank }: { p: LeagueStarPlayer; rank: number }) {
         href={`/team/${p.teamId}`}
         className="min-w-0 flex-1 hover:text-[var(--color-accent)] transition-colors"
       >
-        <p className="text-sm font-semibold truncate leading-tight">{p.name}</p>
+        <p className="text-sm font-semibold leading-tight break-keep">{p.name}</p>
         <p className="text-[11px] text-[var(--color-muted)] flex items-center gap-1 mt-0.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
