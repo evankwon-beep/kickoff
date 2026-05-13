@@ -2,7 +2,8 @@ import type { NewsItem } from "@/lib/news";
 
 interface Props {
   teamName: string;
-  news: NewsItem[];
+  general: NewsItem[];
+  transfer: NewsItem[];
 }
 
 function relativeTime(iso: string): string {
@@ -19,57 +20,74 @@ function relativeTime(iso: string): string {
   return `${diffW}주 전`;
 }
 
-export function TeamNewsSection({ teamName, news }: Props) {
-  const googleNewsUrl = `https://news.google.com/search?q=${encodeURIComponent(teamName + " 축구")}&hl=ko`;
+function NewsList({ items }: { items: NewsItem[] }) {
+  if (items.length === 0) {
+    return <p className="text-[var(--color-muted)] py-3 text-sm">아직 가져올 뉴스가 없어요.</p>;
+  }
+  return (
+    <ul className="space-y-2">
+      {items.map((n, idx) => (
+        <li
+          key={`${n.link}-${idx}`}
+          className="border border-[var(--color-border)] rounded-lg p-3 hover:border-[var(--color-accent)]/40 transition-colors"
+        >
+          <a href={n.link} target="_blank" rel="noopener noreferrer" className="block group">
+            <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
+              {n.title}
+            </p>
+            <p className="text-xs text-[var(--color-muted)] mt-1.5 flex items-center gap-2">
+              <span>{n.source}</span>
+              {n.publishedAt && (
+                <>
+                  <span>·</span>
+                  <span>{relativeTime(n.publishedAt)}</span>
+                </>
+              )}
+            </p>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function TeamNewsSection({ teamName, general, transfer }: Props) {
+  const newsUrl = (q: string) =>
+    `https://news.google.com/search?q=${encodeURIComponent(q)}&hl=ko`;
 
   return (
     <section className="kickoff-card p-5">
-      <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
-        <h2 className="section-title text-xl">
-          📰 {teamName} 뉴스{" "}
-          <span className="text-[var(--color-muted)] text-sm font-normal ml-1">최근 / 이적</span>
-        </h2>
-        <a
-          href={googleNewsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs font-semibold text-[var(--color-accent)] hover:underline"
-        >
-          전체 보기 ↗
-        </a>
+      <h2 className="section-title text-xl mb-4">📰 {teamName} 뉴스</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--color-accent)]">최근 뉴스</h3>
+          </div>
+          <NewsList items={general} />
+          <a
+            href={newsUrl(`${teamName} 축구`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block mt-3 text-center text-xs font-bold py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/60 hover:text-[var(--color-accent)] transition-colors"
+          >
+            전체 뉴스 보기 ↗
+          </a>
+        </div>
+        <div>
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--color-gold)]">💰 이적 시장</h3>
+          </div>
+          <NewsList items={transfer} />
+          <a
+            href={newsUrl(`${teamName} 이적`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block mt-3 text-center text-xs font-bold py-2 px-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-gold)]/60 hover:text-[var(--color-gold)] transition-colors"
+          >
+            전체 이적 소식 보기 ↗
+          </a>
+        </div>
       </div>
-      {news.length === 0 ? (
-        <p className="text-[var(--color-muted)] py-4">아직 가져올 뉴스가 없어요.</p>
-      ) : (
-        <ul className="space-y-2">
-          {news.map((n, idx) => (
-            <li
-              key={`${n.link}-${idx}`}
-              className="border border-[var(--color-border)] rounded-lg p-3 hover:border-[var(--color-accent)]/40 transition-colors"
-            >
-              <a
-                href={n.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group"
-              >
-                <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
-                  {n.title}
-                </p>
-                <p className="text-xs text-[var(--color-muted)] mt-1.5 flex items-center gap-2">
-                  <span>{n.source}</span>
-                  {n.publishedAt && (
-                    <>
-                      <span>·</span>
-                      <span>{relativeTime(n.publishedAt)}</span>
-                    </>
-                  )}
-                </p>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   );
 }

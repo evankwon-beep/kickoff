@@ -48,22 +48,39 @@ async function fetchGoogleNews(query: string): Promise<NewsItem[]> {
 }
 
 /**
- * 팀 관련 일반 뉴스 + 이적 뉴스를 합쳐서 반환. 중복 제거 + 최신순 정렬.
+ * 팀 일반 뉴스와 이적 뉴스를 분리해서 반환.
  */
-export async function fetchTeamNews(teamKoreanName: string, limit = 10): Promise<NewsItem[]> {
+export async function fetchTeamNewsByType(
+  teamKoreanName: string,
+  limit = 6
+): Promise<{ general: NewsItem[]; transfer: NewsItem[] }> {
   const [general, transfer] = await Promise.all([
     fetchGoogleNews(`${teamKoreanName} 축구`),
     fetchGoogleNews(`${teamKoreanName} 이적`),
   ]);
+  const transferLinks = new Set(transfer.map((t) => t.link));
+  // 일반 쿼리 결과에서 이적 결과와 겹치는 건 제거 (이적쪽에만 노출)
+  const generalOnly = general.filter((g) => !transferLinks.has(g.link));
+  generalOnly.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  transfer.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return {
+    general: generalOnly.slice(0, limit),
+    transfer: transfer.slice(0, limit),
+  };
+}
+
+/**
+ * (호환용) 합친 뉴스. 새 UI는 위 fetchTeamNewsByType 사용.
+ */
+export async function fetchTeamNews(teamKoreanName: string, limit = 10): Promise<NewsItem[]> {
+  const { general, transfer } = await fetchTeamNewsByType(teamKoreanName, limit);
   const seen = new Set<string>();
   const merged: NewsItem[] = [];
-  // 이적 뉴스를 위쪽으로 가게 (사용자 의도)
   for (const it of [...transfer, ...general]) {
     if (seen.has(it.link)) continue;
     seen.add(it.link);
     merged.push(it);
   }
-  // 최신순 정렬
   merged.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
   return merged.slice(0, limit);
 }

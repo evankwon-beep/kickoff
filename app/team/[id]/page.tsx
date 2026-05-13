@@ -13,7 +13,7 @@ import {
   fetchTeamFixtures,
   fetchTeamHighlights,
 } from "@/lib/dataSource";
-import { fetchTeamNews } from "@/lib/news";
+import { fetchTeamNewsByType } from "@/lib/news";
 import { resolvePlayerNames } from "@/lib/playerNameMapper";
 import { koreanTeamName, koreanCountry } from "@/lib/i18n";
 
@@ -62,7 +62,7 @@ export default async function TeamPage({ params }: PageProps) {
   const [fixtures, videos, news] = await Promise.all([
     fetchTeamFixtures(id).catch(() => []),
     fetchTeamHighlights(team, 50).catch(() => []),
-    fetchTeamNews(teamKoreanName, 10).catch(() => []),
+    fetchTeamNewsByType(teamKoreanName, 3).catch(() => ({ general: [], transfer: [] })),
   ]);
 
   const nameMap = await resolvePlayerNames(id, team.squad.map((p) => p.name)).catch(
@@ -147,8 +147,12 @@ export default async function TeamPage({ params }: PageProps) {
           emptyStateQuery={`${teamKoreanName} 하이라이트`}
         />
 
-        {/* Team news — 하이라이트 바로 아래 */}
-        <TeamNewsSection teamName={teamKoreanName} news={news} />
+        {/* Team news — 하이라이트 바로 아래, 일반/이적 분리 */}
+        <TeamNewsSection
+          teamName={teamKoreanName}
+          general={news.general}
+          transfer={news.transfer}
+        />
 
         {/* Recent + upcoming */}
         <UpcomingFixtures fixtures={fixtures} />
