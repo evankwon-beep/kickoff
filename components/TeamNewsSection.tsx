@@ -20,10 +20,8 @@ function relativeTime(iso: string): string {
   return `${diffW}주 전`;
 }
 
-function faviconUrl(domain: string | undefined, source: string): string {
-  if (domain) return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
-  // domain 없으면 기본 placeholder (회색 박스)
-  return "";
+function faviconFallback(domain: string | undefined): string | null {
+  return domain ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : null;
 }
 
 function NewsList({ items }: { items: NewsItem[] }) {
@@ -33,7 +31,8 @@ function NewsList({ items }: { items: NewsItem[] }) {
   return (
     <ul className="space-y-2">
       {items.map((n, idx) => {
-        const fav = faviconUrl(n.sourceDomain, n.source);
+        const fallback = faviconFallback(n.sourceDomain);
+        const hasArticleImg = Boolean(n.imageUrl);
         return (
           <li
             key={`${n.link}-${idx}`}
@@ -45,25 +44,32 @@ function NewsList({ items }: { items: NewsItem[] }) {
               rel="noopener noreferrer"
               className="flex items-stretch gap-3 p-3 group"
             >
-              <div className="shrink-0 w-10 h-10 rounded-md bg-[var(--color-surface-2)] flex items-center justify-center overflow-hidden">
-                {fav ? (
-                  // 일반 img 태그 (next/image는 외부 도메인 화이트리스트 필요 + 작은 favicon용)
+              <div className="shrink-0 w-20 h-20 rounded-md bg-[var(--color-surface-2)] flex items-center justify-center overflow-hidden">
+                {hasArticleImg ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={fav}
+                    src={n.imageUrl}
                     alt=""
-                    className="w-7 h-7 object-contain"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : fallback ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={fallback}
+                    alt=""
+                    className="w-8 h-8 object-contain opacity-70"
                     loading="lazy"
                   />
                 ) : (
                   <span className="text-[var(--color-muted)] text-xs">📰</span>
                 )}
               </div>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
+              <div className="min-w-0 flex-1 text-left flex flex-col">
+                <p className="text-sm font-semibold leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-3">
                   {n.title}
                 </p>
-                <p className="text-xs text-[var(--color-muted)] mt-1 flex items-center gap-2">
+                <p className="text-xs text-[var(--color-muted)] mt-auto pt-1 flex items-center gap-2">
                   <span className="truncate">{n.source}</span>
                   {n.publishedAt && (
                     <>
