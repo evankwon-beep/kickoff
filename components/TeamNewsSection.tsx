@@ -20,10 +20,6 @@ function relativeTime(iso: string): string {
   return `${diffW}주 전`;
 }
 
-function faviconFallback(domain: string | undefined): string | null {
-  return domain ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : null;
-}
-
 function NewsList({ items }: { items: NewsItem[] }) {
   if (items.length === 0) {
     return <p className="text-[var(--color-muted)] py-3 text-sm">아직 가져올 뉴스가 없어요.</p>;
@@ -31,7 +27,6 @@ function NewsList({ items }: { items: NewsItem[] }) {
   return (
     <ul className="space-y-2">
       {items.map((n, idx) => {
-        const fallback = faviconFallback(n.sourceDomain);
         const hasArticleImg = Boolean(n.imageUrl);
         return (
           <li
@@ -44,7 +39,7 @@ function NewsList({ items }: { items: NewsItem[] }) {
               rel="noopener noreferrer"
               className="flex items-stretch gap-3 p-3 group"
             >
-              <div className="shrink-0 w-20 h-20 rounded-md bg-[var(--color-surface-2)] flex items-center justify-center overflow-hidden">
+              <div className="shrink-0 w-20 h-20 rounded-md overflow-hidden flex items-center justify-center bg-gradient-to-br from-[var(--color-surface-2)] to-[var(--color-bg)] border border-[var(--color-border)]">
                 {hasArticleImg ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -53,16 +48,8 @@ function NewsList({ items }: { items: NewsItem[] }) {
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
-                ) : fallback ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={fallback}
-                    alt=""
-                    className="w-8 h-8 object-contain opacity-70"
-                    loading="lazy"
-                  />
                 ) : (
-                  <span className="text-[var(--color-muted)] text-xs">📰</span>
+                  <span className="text-2xl opacity-50" aria-hidden>📰</span>
                 )}
               </div>
               <div className="min-w-0 flex-1 text-left flex flex-col">

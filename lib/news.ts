@@ -107,7 +107,7 @@ async function fetchViaMicrolink(url: string): Promise<string | null> {
   try {
     const api = `https://api.microlink.io/?url=${encodeURIComponent(url)}`;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
+    const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(api, {
       signal: controller.signal,
       next: { revalidate: 43200 },
@@ -119,7 +119,12 @@ async function fetchViaMicrolink(url: string): Promise<string | null> {
       data?: { image?: { url?: string }; logo?: { url?: string } };
     };
     if (data.status !== "success") return null;
-    return data.data?.image?.url ?? data.data?.logo?.url ?? null;
+    // Microlink가 logo만 주면 Google logo 또는 favicon일 가능성 → 거절
+    const image = data.data?.image?.url;
+    if (image && !/google\.com\/favicons|googleusercontent/.test(image)) {
+      return image;
+    }
+    return null;
   } catch {
     return null;
   }
