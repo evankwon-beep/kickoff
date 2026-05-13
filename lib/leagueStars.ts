@@ -1,4 +1,6 @@
+import "server-only";
 import marketValues from "@/data/player-market-values.json";
+import { fetchNaverSquad } from "./naverSquad";
 import type { LeagueCode } from "./dataSource/types";
 
 interface SectionInfo {
@@ -49,6 +51,10 @@ export interface LeagueStarPlayer {
   league: LeagueCode;
   valueBillionWon: number;
   crestUrl: string;
+  /** 네이버 선수 사진 URL (없을 수 있음) */
+  photoUrl?: string;
+  /** 국적 한국어 표기 */
+  nationality?: string;
 }
 
 function build(): LeagueStarPlayer[] {
@@ -89,4 +95,67 @@ export function topByLeague(league: LeagueCode, n = 5): LeagueStarPlayer[] {
     if (unique.length >= n) break;
   }
   return unique;
+}
+
+/** 4대 리그 각각 top N + 네이버 사진/국적 보강. ISR 1시간 캐시. */
+export async function topStarsAllLeaguesWithPhotos(
+  n = 5
+): Promise<Record<LeagueCode, LeagueStarPlayer[]>> {
+  const top: Record<string, LeagueStarPlayer[]> = {
+    PL: topByLeague("PL", n),
+    PD: topByLeague("PD", n),
+    BL1: topByLeague("BL1", n),
+    SA: topByLeague("SA", n),
+  };
+
+  // 등장한 모든 teamId 모음
+  const teamIds = new Set<number>();
+  for (const arr of Object.values(top)) {
+    for (const p of arr) teamIds.add(p.teamId);
+  }
+
+  // 각 팀의 Naver squad를 병렬 fetch
+  const squadByTeam = new Map<number, Awaited<ReturnType<typeof fetchNaverSquad>>>();
+  await Promise.all(
+    Array.from(teamIds).map(async (id) => {
+      try {
+        const s = await fetchNaverSquad(id);
+        squadByTeam.set(id, s);
+      } catch {
+        squadByTeam.set(id, null);
+      }
+    })
+  );
+
+  // 매핑: 매핑 JSON 이름 ↔ 네이버 squad name (정확 일치 우선, 부분 매칭 fallback)
+  function findInSquad(
+    squad: NonNullable<Awaited<ReturnType<typeof fetchNaverSquad>>>,
+    playerName: string
+  ) {
+    const exact = squad.find((p) => p.name === playerName);
+    if (exact) return exact;
+    // 일부 alias 매칭 (한 쪽이 다른 쪽의 prefix)
+    return squad.find(
+      (p) =>
+        p.name.startsWith(playerName) ||
+        playerName.startsWith(p.name) ||
+        // 공백 제거 비교
+        p.name.replace(/\s/g, "") === playerName.replace(/\s/g, "")
+    );
+  }
+
+  // top 결과 보강
+  for (const arr of Object.values(top)) {
+    for (const p of arr) {
+      const squad = squadByTeam.get(p.teamId);
+      if (!squad) continue;
+      const matched = findInSquad(squad, p.name);
+      if (matched) {
+        p.photoUrl = matched.profileUrl;
+        p.nationality = matched.countryName;
+      }
+    }
+  }
+
+  return top as Record<LeagueCode, LeagueStarPlayer[]>;
 }
