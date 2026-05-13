@@ -78,6 +78,14 @@ export function LeagueStandingsCard({ standings, topN = 6, hideHeader = false }:
           </li>
         ))}
       </ol>
+      {!hideHeader && totalTeams > topN && (
+        <Link
+          href={`/competition/${standings.leagueCode}`}
+          className="block mt-3 text-center text-xs font-bold py-2 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/60 hover:text-[var(--color-accent)] transition-colors"
+        >
+          전체 순위 보기 ({totalTeams}팀) ↗
+        </Link>
+      )}
     </div>
   );
 }
