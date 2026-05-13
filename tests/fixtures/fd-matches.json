@@ -1,0 +1,22 @@
+{
+  "matches": [
+    {
+      "id": 1001,
+      "competition": { "code": "PL" },
+      "utcDate": "2026-05-14T19:00:00Z",
+      "status": "SCHEDULED",
+      "homeTeam": { "id": 65, "name": "Manchester City FC", "shortName": "Man City", "tla": "MCI", "crest": "https://crests.football-data.org/65.png" },
+      "awayTeam": { "id": 64, "name": "Liverpool FC", "shortName": "Liverpool", "tla": "LIV", "crest": "https://crests.football-data.org/64.png" },
+      "score": { "fullTime": { "home": null, "away": null } }
+    },
+    {
+      "id": 1002,
+      "competition": { "code": "PL" },
+      "utcDate": "2026-05-12T14:00:00Z",
+      "status": "FINISHED",
+      "homeTeam": { "id": 73, "name": "Tottenham Hotspur FC", "shortName": "Tottenham", "tla": "TOT", "crest": "https://crests.football-data.org/73.png" },
+      "awayTeam": { "id": 61, "name": "Chelsea FC", "shortName": "Chelsea", "tla": "CHE", "crest": "https://crests.football-data.org/61.png" },
+      "score": { "fullTime": { "home": 2, "away": 1 } }
+    }
+  ]
+}
