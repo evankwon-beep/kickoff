@@ -42,7 +42,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* 새 섹션: 리그별 몸값 TOP 5 (standings 무관 - 시장가치만 기준) */}
+        {/* 새 섹션: 리그별 시장가치 TOP 5 (standings 무관 - 시장가치만 기준) */}
         <LeagueMarketValueSection />
 
         {/* 순서 변경: 하이라이트 먼저, 경기 일정 나중 */}

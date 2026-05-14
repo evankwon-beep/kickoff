@@ -65,7 +65,7 @@ function LeagueCard({
             loading="lazy"
           />
         )}
-        <span>{nameKr} 몸값 TOP 5</span>
+        <span>{nameKr} 시장가치 TOP 5</span>
       </h3>
       {stars.length === 0 ? (
         <p className="text-[var(--color-muted)] text-sm py-3">데이터 준비 중.</p>
@@ -88,7 +88,7 @@ export async function LeagueMarketValueSection() {
 
   return (
     <section>
-      <h2 className="section-title text-xl mb-3">리그별 몸값 TOP 5</h2>
+      <h2 className="section-title text-xl mb-3">리그별 시장가치 TOP 5</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {TOP4_LEAGUES.map((l) => (
           <LeagueCard
