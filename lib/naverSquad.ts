@@ -66,4 +66,38 @@ export async function fetchNaverSquad(fdTeamId: number): Promise<NaverPlayer[] |
   }
 }
 
+/**
+ * Squad에 없는 선수(예: 본머스 squad JSON 누락 케이스)를 위한 fallback.
+ * 네이버 검색 결과의 og:image를 사용해서 인물 사진 URL을 가져온다.
+ * 네이버 logo/default 이미지를 걸러내기 위해 search.pstatic.net 도메인만 신뢰.
+ */
+export async function fetchNaverPersonPhoto(
+  koName: string
+): Promise<string | null> {
+  if (!koName) return null;
+  const url = `${SEARCH_BASE}?query=${encodeURIComponent(koName)}`;
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, "Accept-Language": "ko" },
+      next: { revalidate: 86400 },
+    } as RequestInit);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const og = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+    const candidate = og?.[1];
+    if (!candidate) return null;
+    if (!candidate.includes("pstatic.net")) return null;
+    if (
+      candidate.includes("/og_default") ||
+      candidate.includes("/logo/") ||
+      candidate.includes("naver_share")
+    ) {
+      return null;
+    }
+    return candidate;
+  } catch {
+    return null;
+  }
+}
+
 export type { NaverPlayer };

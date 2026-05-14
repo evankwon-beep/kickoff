@@ -1,6 +1,6 @@
 import "server-only";
 import { fetchScorers, fetchTop4Standings } from "@/lib/dataSource";
-import { fetchNaverSquad } from "@/lib/naverSquad";
+import { fetchNaverSquad, fetchNaverPersonPhoto } from "@/lib/naverSquad";
 import { koreanTeamName } from "@/lib/i18n";
 import {
   SECTION,
@@ -100,24 +100,31 @@ async function enrichScorerEntries(
     })
   );
 
-  return sorted.map((e) => {
-    const squad = squads.get(e.team.id);
-    const displayName = enToKo(e.player.name);
-    const matched = squad
-      ? matchSquad(squad, displayName, e.player.name)
-      : undefined;
-    return {
-      // 우선순위: Naver squad 매칭된 한국어 이름 > 영문→한국어 매핑 > 원본 영문
-      name: matched?.name ?? displayName,
-      teamId: e.team.id,
-      teamName: koreanTeamName(e.team.id, e.team.name),
-      crestUrl: crestFor(e.team.id, e.team.crest),
-      photoUrl: matched?.profileUrl,
-      nationality: matched?.countryName ?? e.player.nationality,
-      value: valueOf(e),
-      unit,
-    };
-  });
+  return Promise.all(
+    sorted.map(async (e) => {
+      const squad = squads.get(e.team.id);
+      const displayName = enToKo(e.player.name);
+      const matched = squad
+        ? matchSquad(squad, displayName, e.player.name)
+        : undefined;
+      // squad 매칭 실패 시 네이버 인물 검색 og:image fallback
+      const photoUrl =
+        matched?.profileUrl ??
+        (await fetchNaverPersonPhoto(displayName)) ??
+        undefined;
+      return {
+        // 우선순위: Naver squad 매칭된 한국어 이름 > 영문→한국어 매핑 > 원본 영문
+        name: matched?.name ?? displayName,
+        teamId: e.team.id,
+        teamName: koreanTeamName(e.team.id, e.team.name),
+        crestUrl: crestFor(e.team.id, e.team.crest),
+        photoUrl,
+        nationality: matched?.countryName ?? e.player.nationality,
+        value: valueOf(e),
+        unit,
+      };
+    })
+  );
 }
 
 /**
