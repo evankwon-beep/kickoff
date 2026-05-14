@@ -79,37 +79,63 @@ export async function fetchNaverSquad(fdTeamId: number): Promise<NaverPlayer[] |
 }
 
 /**
- * Squad에 없는 선수(예: 본머스 squad JSON 누락 케이스)를 위한 fallback.
- * 네이버 검색 결과의 og:image를 사용해서 인물 사진 URL을 가져온다.
- * 네이버 logo/default 이미지를 걸러내기 위해 search.pstatic.net 도메인만 신뢰.
+ * Squad에 없거나 squad의 profileUrl이 빈 선수를 위한 fallback.
+ * 네이버 검색 결과 HTML에서 인물 사진 URL을 가져온다.
+ *
+ * 1차: og:image (네이버 favicon/logo는 reject)
+ * 2차: HTML 본문의 search.pstatic.net/common/?src=... 패턴 (인물 카드 썸네일)
  */
 export async function fetchNaverPersonPhoto(
   koName: string
 ): Promise<string | null> {
   if (!koName) return null;
-  const url = `${SEARCH_BASE}?query=${encodeURIComponent(koName)}`;
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": UA, "Accept-Language": "ko" },
-      next: { revalidate: 86400 },
-    } as RequestInit);
-    if (!res.ok) return null;
-    const html = await res.text();
-    const og = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
-    const candidate = og?.[1];
-    if (!candidate) return null;
-    if (!candidate.includes("pstatic.net")) return null;
-    if (
-      candidate.includes("/og_default") ||
-      candidate.includes("/logo/") ||
-      candidate.includes("naver_share")
-    ) {
+  const tryQuery = async (q: string): Promise<string | null> => {
+    const url = `${SEARCH_BASE}?query=${encodeURIComponent(q)}`;
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": UA, "Accept-Language": "ko" },
+        next: { revalidate: 86400 },
+      } as RequestInit);
+      if (!res.ok) return null;
+      const html = await res.text();
+      // 1차: og:image — 단 네이버 기본 favicon/logo는 거름
+      const og = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+      const ogUrl = og?.[1];
+      if (
+        ogUrl &&
+        ogUrl.includes("pstatic.net") &&
+        !ogUrl.includes("og_default") &&
+        !ogUrl.includes("/logo/") &&
+        !ogUrl.includes("naver_share") &&
+        !ogUrl.includes("og_200x200") &&
+        !ogUrl.includes("/favicon/")
+      ) {
+        return ogUrl;
+      }
+      // 2차: HTML 본문의 인물 카드 썸네일 (CDN proxy URL)
+      // 큰 사이즈(type=f128_128 또는 f223_281 등) 우선, 없으면 작은 거라도
+      const big = html.match(
+        /https:\/\/search\.pstatic\.net\/common\/\?src=[^"'\s&]+(?:&amp;|&)type=f(?:128_128|223_281|180_180|200_200)/
+      );
+      if (big?.[0]) return big[0].replace(/&amp;/g, "&");
+      const any = html.match(
+        /https:\/\/search\.pstatic\.net\/common\/\?src=[^"'\s&]+(?:&amp;|&)type=f\d+_\d+/
+      );
+      if (any?.[0]) return any[0].replace(/&amp;/g, "&");
+      return null;
+    } catch {
       return null;
     }
-    return candidate;
-  } catch {
-    return null;
+  };
+  // 한 번 시도 후, 하이픈/공백 변형도 한 번 더 시도 (예: "모건 깁스-화이트" → "모건 깁스 화이트")
+  const variants = [koName];
+  if (koName.includes("-")) variants.push(koName.replace(/-/g, " "));
+  if (koName.includes(" ")) variants.push(koName.replace(/\s+/g, ""));
+  for (const v of variants) {
+    const url = await tryQuery(v);
+    if (url) return url;
   }
+  return null;
 }
 
 export type { NaverPlayer };

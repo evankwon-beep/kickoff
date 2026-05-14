@@ -1,6 +1,6 @@
 import "server-only";
 import marketValues from "@/data/player-market-values.json";
-import { fetchNaverSquad } from "./naverSquad";
+import { fetchNaverSquad, fetchNaverPersonPhoto } from "./naverSquad";
 import type { LeagueCode } from "./dataSource/types";
 
 export interface SectionInfo {
@@ -247,26 +247,41 @@ export async function topByLeagueWithPhotos(
     );
   }
 
-  const result: LeagueStarPlayer[] = [];
+  type Matched = { star: LeagueStarPlayer; matchedName: string; profileUrl?: string; countryName?: string };
+  const filtered: Matched[] = [];
   const usedPlayerNames = new Set<string>(); // squad 매칭 후 같은 사람 중복 방지
   for (const star of candidates) {
-    if (result.length >= n) break;
+    if (filtered.length >= n) break;
     const squad = squads.get(star.teamId);
     if (!squad) continue; // squad 못 가져오면 제외 (사진 없는 phantom 방지)
     const matched = matchSquad(squad, star.name);
     if (!matched) continue; // squad에 실제로 없으면 제외 (이적한 선수 등)
-    // 같은 squad 선수가 다른 매핑 키로 이미 등록됐으면 skip
     const playerKey = `${star.teamId}::${matched.name}`;
     if (usedPlayerNames.has(playerKey)) continue;
     usedPlayerNames.add(playerKey);
-    result.push({
-      ...star,
-      name: matched.name, // 표시 이름은 네이버 정확 표기로 통일
-      photoUrl: matched.profileUrl,
-      nationality: matched.countryName,
+    filtered.push({
+      star,
+      matchedName: matched.name,
+      profileUrl: matched.profileUrl,
+      countryName: matched.countryName,
     });
   }
-  return result;
+  // photoUrl 없는 경우 네이버 인물 검색 fallback (병렬)
+  return Promise.all(
+    filtered.map(async ({ star, matchedName, profileUrl, countryName }) => {
+      const squadPhoto = profileUrl?.trim() ? profileUrl : null;
+      const photoUrl =
+        squadPhoto ??
+        (await fetchNaverPersonPhoto(matchedName)) ??
+        undefined;
+      return {
+        ...star,
+        name: matchedName,
+        photoUrl,
+        nationality: countryName,
+      };
+    })
+  );
 }
 
 export async function topAllLeaguesByValue(
