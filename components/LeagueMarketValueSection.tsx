@@ -65,7 +65,7 @@ function LeagueCard({
             loading="lazy"
           />
         )}
-        <span>{nameKr} 시장가치 TOP 5</span>
+        <span>{nameKr}</span>
       </h3>
       {stars.length === 0 ? (
         <p className="text-[var(--color-muted)] text-sm py-3">데이터 준비 중.</p>
