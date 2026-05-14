@@ -140,7 +140,8 @@ export class YoutubeHighlightSource implements HighlightSource {
       });
       if (pageToken) params.set("pageToken", pageToken);
       const res = await fetch(`${BASE}/playlistItems?${params.toString()}`, {
-        next: { revalidate: 14400 },
+        // 영상 풀은 자주 갱신. playlistItems는 1 unit/call이라 1시간 캐시도 quota 안전.
+        next: { revalidate: 3600 },
       } as RequestInit);
       if (!res.ok) break;
       const data = (await res.json()) as YtPlaylistItemsResponse;
