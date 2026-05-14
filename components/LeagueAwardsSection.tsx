@@ -31,6 +31,7 @@ function AwardRow({ entry, rank }: { entry: AwardEntry; rank: number }) {
             alt=""
             className="w-3.5 h-3.5 object-contain shrink-0"
             loading="lazy"
+            referrerPolicy="no-referrer"
           />
           <span className="truncate">
             {entry.teamName}

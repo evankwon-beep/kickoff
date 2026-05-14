@@ -30,6 +30,7 @@ function StarRow({ p, rank }: { p: LeagueStarPlayer; rank: number }) {
             alt=""
             className="w-3.5 h-3.5 object-contain shrink-0"
             loading="lazy"
+            referrerPolicy="no-referrer"
           />
           <span className="truncate">
             {p.teamName}
