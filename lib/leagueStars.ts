@@ -34,7 +34,7 @@ export const SECTION: Record<string, SectionInfo> = {
   leverkusen: { teamId: 3, league: "BL1", teamName: "레버쿠젠" },
   leipzig: { teamId: 721, league: "BL1", teamName: "RB 라이프치히" },
   stuttgart: { teamId: 10, league: "BL1", teamName: "슈투트가르트" },
-  frankfurt: { teamId: 36, league: "BL1", teamName: "프랑크푸르트" },
+  frankfurt: { teamId: 19, league: "BL1", teamName: "프랑크푸르트" },
   inter: { teamId: 108, league: "SA", teamName: "인테르" },
   juventus: { teamId: 109, league: "SA", teamName: "유벤투스" },
   napoli: { teamId: 113, league: "SA", teamName: "나폴리" },
