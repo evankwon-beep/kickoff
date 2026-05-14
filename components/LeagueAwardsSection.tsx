@@ -101,7 +101,7 @@ function LeagueAwardCard({
       <SubSection icon="🎯" title="도움왕" entries={awards?.assists ?? []} />
       <SubSection
         icon="🛡️"
-        title="수비왕 (실점 최저)"
+        title="수비왕 (수비수 시장가치 TOP)"
         entries={awards?.defense ?? []}
       />
     </div>
@@ -117,7 +117,7 @@ export async function LeagueAwardsSection() {
   return (
     <section>
       <h2 className="section-title text-xl mb-3">
-        리그별 득점왕/도움왕/수비왕 TOP 3
+        리그별 득점왕 · 도움왕 · 수비왕 TOP 3
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {TOP4_LEAGUES.map((l) => (

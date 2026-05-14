@@ -3,14 +3,14 @@ import marketValues from "@/data/player-market-values.json";
 import { fetchNaverSquad } from "./naverSquad";
 import type { LeagueCode } from "./dataSource/types";
 
-interface SectionInfo {
+export interface SectionInfo {
   teamId: number;
   league: LeagueCode;
   teamName: string;
 }
 
 // 매핑 JSON의 섹션 마커 → 팀 ID + 리그 코드 + 팀명
-const SECTION: Record<string, SectionInfo> = {
+export const SECTION: Record<string, SectionInfo> = {
   arsenal: { teamId: 57, league: "PL", teamName: "아스널" },
   mancity: { teamId: 65, league: "PL", teamName: "맨시티" },
   manunited: { teamId: 66, league: "PL", teamName: "맨유" },
@@ -96,7 +96,7 @@ function build(): LeagueStarPlayer[] {
 const ALL = build();
 
 // 두 이름이 같은 선수의 alias인지 (prefix/normalize 매칭)
-function looksLikeSamePlayer(a: string, b: string): boolean {
+export function looksLikeSamePlayer(a: string, b: string): boolean {
   if (a === b) return true;
   const na = a.replace(/[\s·\-]/g, "");
   const nb = b.replace(/[\s·\-]/g, "");
@@ -123,7 +123,7 @@ export function topByLeague(league: LeagueCode, n = 5): LeagueStarPlayer[] {
 }
 
 // 매핑 JSON에서 lookup (normalize / prefix 매칭까지 시도)
-function lookupValueFlexible(playerName: string): number | null {
+export function lookupValueFlexible(playerName: string): number | null {
   const trimmed = playerName.trim();
   if (!trimmed) return null;
   const raw = (marketValues as Record<string, unknown>)[trimmed];

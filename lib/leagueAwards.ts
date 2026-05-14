@@ -2,7 +2,15 @@ import "server-only";
 import { fetchScorers, fetchTop4Standings } from "@/lib/dataSource";
 import { fetchNaverSquad } from "@/lib/naverSquad";
 import { koreanTeamName } from "@/lib/i18n";
+import {
+  SECTION,
+  looksLikeSamePlayer,
+  lookupValueFlexible,
+} from "@/lib/leagueStars";
+import enToKoMap from "@/data/scorer-name-en-to-ko.json";
 import type { LeagueCode, ScorerEntry, Standings } from "@/lib/dataSource/types";
+
+const EN_TO_KO = enToKoMap as Record<string, string>;
 
 export interface AwardEntry {
   /** 표시 이름 (가능하면 한국어, 폴백 영어) */
@@ -15,9 +23,9 @@ export interface AwardEntry {
   photoUrl?: string;
   /** 국적 코드 또는 영어 이름 (UI에서 koreanCountry로 변환) */
   nationality?: string;
-  /** 통계 값 (골/도움/실점) */
+  /** 통계 값 (골/도움/시장가치 등) */
   value: number;
-  /** "골" / "도움" / "실점" */
+  /** "골" / "도움" / "억" 등 */
   unit: string;
 }
 
@@ -25,7 +33,7 @@ export interface LeagueAwards {
   league: LeagueCode;
   scorers: AwardEntry[]; // 득점왕 top 3
   assists: AwardEntry[]; // 도움왕 top 3
-  defense: AwardEntry[]; // 수비왕 top 3 (실점 적은 팀 GK 또는 팀)
+  defense: AwardEntry[]; // 수비왕 top 3 (수비수 시장가치 TOP)
 }
 
 function crestFor(teamId: number, fallback?: string): string {
@@ -33,25 +41,33 @@ function crestFor(teamId: number, fallback?: string): string {
   return `https://crests.football-data.org/${teamId}.png`;
 }
 
-/** 이름이 같은 선수인지 (공백/기호 제거, prefix) */
-function looksLikeSamePlayer(a: string, b: string): boolean {
-  if (a === b) return true;
-  const na = a.replace(/[\s·\-]/g, "");
-  const nb = b.replace(/[\s·\-]/g, "");
-  if (na === nb) return true;
-  if ((a.startsWith(b) || b.startsWith(a)) && Math.abs(a.length - b.length) <= 3) return true;
-  return false;
+/** 영문 풀네임 → 한국어 매핑이 있으면 한국어, 없으면 그대로 */
+function enToKo(name: string): string {
+  return EN_TO_KO[name] ?? EN_TO_KO[name.trim()] ?? name;
 }
 
-/** 영문 풀네임 → 토큰들로 분리해서 squad와 매칭 */
-function matchSquadByName<T extends { name: string }>(
+/** Naver squad에서 한국어/영문 이름으로 선수 매칭 */
+function matchSquad<T extends { name: string; backNo?: string }>(
   squad: T[],
-  fdName: string
+  displayName: string,
+  englishName: string
 ): T | undefined {
-  const exact = squad.find((p) => looksLikeSamePlayer(p.name, fdName));
+  // 1) 정확 매칭 (한국어 표시 이름)
+  const exact = squad.find((p) => p.name === displayName);
   if (exact) return exact;
-  // 영문 last name 토큰으로 시도
-  const tokens = fdName.split(/\s+/).filter((t) => t.length >= 2);
+  // 2) 유사 매칭 (한국어)
+  const fuzzy = squad.find((p) => looksLikeSamePlayer(p.name, displayName));
+  if (fuzzy) return fuzzy;
+  // 3) 영문 이름이 한국어로 매핑되지 않았을 때 — 토큰 기반 (영문)
+  if (displayName === englishName) {
+    const tokens = englishName.split(/\s+/).filter((t) => t.length >= 2);
+    for (const t of tokens) {
+      const m = squad.find((p) => p.name.includes(t));
+      if (m) return m;
+    }
+  }
+  // 4) 한국어 토큰 매칭 (성/이름 일부)
+  const tokens = displayName.split(/\s+/).filter((t) => t.length >= 2);
   for (const t of tokens) {
     const m = squad.find((p) => p.name.includes(t));
     if (m) return m;
@@ -86,9 +102,13 @@ async function enrichScorerEntries(
 
   return sorted.map((e) => {
     const squad = squads.get(e.team.id);
-    const matched = squad ? matchSquadByName(squad, e.player.name) : undefined;
+    const displayName = enToKo(e.player.name);
+    const matched = squad
+      ? matchSquad(squad, displayName, e.player.name)
+      : undefined;
     return {
-      name: matched?.name ?? e.player.name,
+      // 우선순위: Naver squad 매칭된 한국어 이름 > 영문→한국어 매핑 > 원본 영문
+      name: matched?.name ?? displayName,
       teamId: e.team.id,
       teamName: koreanTeamName(e.team.id, e.team.name),
       crestUrl: crestFor(e.team.id, e.team.crest),
@@ -100,66 +120,103 @@ async function enrichScorerEntries(
   });
 }
 
-/** 실점 최저 팀 top N → 각 팀의 주전 GK (backNo=1 우선, 없으면 첫 GK) */
-async function buildDefenseAwards(
-  standings: Standings,
+/**
+ * 리그별 매핑된 팀의 Naver squad를 fetch해서 position="DF"인 선수 중
+ * 매핑 JSON의 시장가치 top N. football-data 무료 API에 개별 수비수 통계가
+ * 없기 때문에 대안으로 사용.
+ */
+async function fetchTopDefenders(
+  league: LeagueCode,
   topN: number
 ): Promise<AwardEntry[]> {
-  // played > 0 인 팀만 (시즌 초 nonsense 방지)
-  const ranked = [...standings.rows]
-    .filter((r) => r.playedGames > 0)
-    .sort((a, b) => a.goalsAgainst - b.goalsAgainst)
-    .slice(0, topN);
+  // 1) SECTION에서 league에 해당하는 모든 teamId 추출
+  const teamIds = Array.from(
+    new Set(
+      Object.values(SECTION)
+        .filter((s) => s.league === league)
+        .map((s) => s.teamId)
+    )
+  );
+  if (teamIds.length === 0) return [];
 
-  const squads = new Map<number, Awaited<ReturnType<typeof fetchNaverSquad>>>();
+  // 2) 각 team Naver squad 병렬 fetch
+  const squadByTeam = new Map<
+    number,
+    Awaited<ReturnType<typeof fetchNaverSquad>>
+  >();
   await Promise.all(
-    ranked.map(async (r) => {
+    teamIds.map(async (id) => {
       try {
-        squads.set(r.team.id, await fetchNaverSquad(r.team.id));
+        squadByTeam.set(id, await fetchNaverSquad(id));
       } catch {
-        squads.set(r.team.id, null);
+        squadByTeam.set(id, null);
       }
     })
   );
 
-  return ranked.map((r) => {
-    const squad = squads.get(r.team.id);
-    // 주전 GK 우선: backNo=1 > position GK 첫 번째
-    let gk = squad?.find(
-      (p) => p.backNo === "1" && (p.position === "GK" || p.positionName?.includes("골키퍼"))
-    );
-    if (!gk) {
-      gk = squad?.find(
-        (p) => p.position === "GK" || p.positionName?.includes("골키퍼")
-      );
+  // 3) position="DF"인 선수 + 시장가치 lookup
+  interface DefenderCandidate extends AwardEntry {
+    /** 중복 제거용 키 */
+    dedupeKey: string;
+  }
+  const candidates: DefenderCandidate[] = [];
+  for (const [teamId, squad] of squadByTeam.entries()) {
+    if (!squad) continue;
+    const section = Object.values(SECTION).find((s) => s.teamId === teamId);
+    for (const p of squad) {
+      const isDF =
+        p.position === "DF" || p.positionName?.includes("수비수");
+      if (!isDF) continue;
+      const value = lookupValueFlexible(p.name);
+      if (value == null || value <= 0) continue;
+      candidates.push({
+        name: p.name,
+        teamId,
+        teamName: section?.teamName ?? koreanTeamName(teamId, ""),
+        crestUrl: crestFor(teamId),
+        photoUrl: p.profileUrl,
+        nationality: p.countryName,
+        value,
+        unit: "억",
+        dedupeKey: `${teamId}::${p.name}`,
+      });
     }
-    return {
-      name: gk?.name ?? koreanTeamName(r.team.id, r.team.name),
-      teamId: r.team.id,
-      teamName: koreanTeamName(r.team.id, r.team.name),
-      crestUrl: crestFor(r.team.id, r.team.crestUrl),
-      photoUrl: gk?.profileUrl,
-      nationality: gk?.countryName,
-      value: r.goalsAgainst,
-      unit: "실점",
-    };
+  }
+
+  // 4) 같은 선수 alias 중복 제거 + value 내림차순 + top N
+  const seen = new Set<string>();
+  const ranked: DefenderCandidate[] = [];
+  for (const c of candidates.sort((a, b) => b.value - a.value)) {
+    // 같은 팀의 alias 중복 방지
+    const isDup = ranked.some(
+      (r) => r.teamId === c.teamId && looksLikeSamePlayer(r.name, c.name)
+    );
+    if (isDup) continue;
+    if (seen.has(c.dedupeKey)) continue;
+    seen.add(c.dedupeKey);
+    ranked.push(c);
+    if (ranked.length >= topN) break;
+  }
+  // dedupeKey 제거하고 AwardEntry로 반환
+  return ranked.map(({ dedupeKey: _ignored, ...rest }) => {
+    void _ignored;
+    return rest;
   });
 }
 
 /** 단일 리그의 시즌 어워드 (득점왕/도움왕/수비왕 top 3) */
 export async function fetchLeagueAwards(
   league: LeagueCode,
-  standings: Standings | null,
+  _standings: Standings | null,
   topN = 3
 ): Promise<LeagueAwards> {
+  void _standings; // standings는 더 이상 defense 산출에 쓰이지 않음 (signature 호환 유지)
   const scorerEntries = await fetchScorers(league, 10);
 
   const [scorers, assists, defense] = await Promise.all([
     enrichScorerEntries(scorerEntries, (e) => e.goals, "골", topN),
     enrichScorerEntries(scorerEntries, (e) => e.assists, "도움", topN),
-    standings
-      ? buildDefenseAwards(standings, topN)
-      : Promise.resolve([] as AwardEntry[]),
+    fetchTopDefenders(league, topN),
   ]);
 
   return { league, scorers, assists, defense };
@@ -170,7 +227,7 @@ export async function fetchAllLeagueAwards(
   leagues: LeagueCode[],
   topN = 3
 ): Promise<Partial<Record<LeagueCode, LeagueAwards>>> {
-  // standings 한 번에 가져와서 리그별로 매핑
+  // standings는 시그니처 호환을 위해 유지하지만 defense 계산엔 더 이상 안 씀
   const allStandings = await fetchTop4Standings().catch(() => [] as Standings[]);
   const standingsByCode = new Map(allStandings.map((s) => [s.leagueCode, s]));
 
