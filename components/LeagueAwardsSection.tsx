@@ -38,7 +38,7 @@ function AwardRow({ entry, rank }: { entry: AwardEntry; rank: number }) {
           </span>
         </p>
       </Link>
-      <span className="text-xs font-bold text-[var(--color-gold)] whitespace-nowrap tabular-nums">
+      <span className="text-xs font-bold text-[var(--color-gold)] whitespace-nowrap tabular-nums shrink-0 ml-auto">
         {entry.value}
         {entry.unit}
       </span>
@@ -85,17 +85,17 @@ function LeagueAwardCard({
 }) {
   return (
     <div className="kickoff-card p-4 space-y-3">
-      <h3 className="font-extrabold text-base flex items-center gap-2">
+      <h3 className="font-extrabold text-sm flex items-center gap-2 whitespace-nowrap">
         {LEAGUE_LOGOS[code] && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={LEAGUE_LOGOS[code]}
             alt=""
-            className="w-6 h-6 object-contain shrink-0 bg-white rounded p-0.5"
+            className="w-5 h-5 object-contain shrink-0 bg-white rounded p-0.5"
             loading="lazy"
           />
         )}
-        <span>{nameKr} 시즌 어워드</span>
+        <span className="truncate">{nameKr}</span>
       </h3>
       <SubSection icon="⚽" title="득점왕" entries={awards?.scorers ?? []} />
       <SubSection icon="🎯" title="도움왕" entries={awards?.assists ?? []} />

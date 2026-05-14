@@ -37,7 +37,7 @@ function StarRow({ p, rank }: { p: LeagueStarPlayer; rank: number }) {
           </span>
         </p>
       </Link>
-      <span className="text-xs font-bold text-[var(--color-gold)] whitespace-nowrap tabular-nums">
+      <span className="text-xs font-bold text-[var(--color-gold)] whitespace-nowrap tabular-nums shrink-0 ml-auto">
         {fmt(p.valueBillionWon)}
       </span>
     </li>
