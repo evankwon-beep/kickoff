@@ -238,9 +238,11 @@ function naverRowToAward(
     teamName: row.teamId
       ? koreanTeamName(row.teamId, row.teamName)
       : row.teamName,
-    crestUrl: row.teamId
-      ? `https://crests.football-data.org/${row.teamId}.png`
-      : "",
+    // 엠블럼: 네이버 직접 제공 > football-data crest > 빈 문자열
+    // teamId 매핑이 실패해도 네이버 emblemUrl이 있으면 엠블럼 표시됨
+    crestUrl:
+      row.emblemUrl ??
+      (row.teamId ? `https://crests.football-data.org/${row.teamId}.png` : ""),
     photoUrl: row.photoUrl,
     nationality: row.countryId,
     value,

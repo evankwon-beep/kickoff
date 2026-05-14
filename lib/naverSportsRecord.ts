@@ -54,6 +54,8 @@ export interface NaverRecordPlayer {
   teamName: string;
   /** 사진 URL */
   photoUrl?: string;
+  /** 팀 엠블럼 URL (네이버 sports-phinf 도메인). teamId 매핑 실패해도 엠블럼은 표시 가능. */
+  emblemUrl?: string;
   /** 국적 ISO 코드 (네이버 형식, 예: "NOR") */
   countryId?: string;
   goals: number;
@@ -72,6 +74,7 @@ interface NaverRankRow {
   playerName: string;
   teamId: string;
   teamName: string;
+  teamEmblemUrl?: string;
   countryId?: string;
   image?: string;
   goals: number;
@@ -133,6 +136,7 @@ function mapRow(row: NaverRankRow): NaverRecordPlayer {
     teamId: resolveTeamIdFromKoreanName(row.teamName),
     teamName: row.teamName,
     photoUrl: row.image || undefined,
+    emblemUrl: row.teamEmblemUrl || undefined,
     countryId: row.countryId,
     goals: row.goals ?? 0,
     assists: row.assists ?? 0,
