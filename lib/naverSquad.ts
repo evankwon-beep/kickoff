@@ -1,5 +1,14 @@
 import "server-only";
 import teamMap from "@/data/team-korean-names.json";
+import hideListRaw from "@/data/player-hide-list.json";
+
+const HIDE_LIST = hideListRaw as Record<string, string[] | string>;
+
+function isHidden(fdTeamId: number, playerName: string): boolean {
+  const entry = HIDE_LIST[String(fdTeamId)];
+  if (!entry || typeof entry === "string") return false;
+  return entry.some((n) => n === playerName || playerName.includes(n) || n.includes(playerName));
+}
 
 interface NaverPlayer {
   name: string;
@@ -60,7 +69,10 @@ export async function fetchNaverSquad(fdTeamId: number): Promise<NaverPlayer[] |
     } as RequestInit);
     if (!res.ok) return null;
     const html = await res.text();
-    return extractSquadJson(html);
+    const squad = extractSquadJson(html);
+    if (!squad) return null;
+    // 이적 반영이 늦은 외부 데이터를 위한 수동 hide list 적용
+    return squad.filter((p) => !isHidden(fdTeamId, p.name));
   } catch {
     return null;
   }
