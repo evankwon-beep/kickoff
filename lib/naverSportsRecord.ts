@@ -26,7 +26,9 @@ const LEAGUE_TO_NAVER: Partial<Record<LeagueCode, string>> = {
   PL: "epl",
   PD: "primera",
   BL1: "bundesliga",
-  SA: "seriea",
+  // 네이버 표기: "seria" (한 글자 빠짐). "seriea"는 비어 있음. 사용자 확인:
+  // https://m.sports.naver.com/wfootball/record/seria?seasonCode=hDj5&tab=players
+  SA: "seria",
   FL1: "ligue1",
 };
 
@@ -41,8 +43,8 @@ const SEASON_CODE_BY_LEAGUE: Partial<Record<LeagueCode, string>> = {
   PL: "lji9",
   PD: "Igrb",
   BL1: "lvYe",
+  SA: "hDj5", // 네이버 seria 25/26 시즌 코드 (사용자 확인)
   FL1: "eJUK",
-  // SA: 네이버 미지원 (2026-05 기준)
 };
 
 export interface NaverRecordPlayer {
