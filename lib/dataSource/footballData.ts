@@ -1,4 +1,4 @@
-import type { DataSource, LeagueCode, Standings, Fixture, TeamDetail } from "./types";
+import type { DataSource, LeagueCode, Standings, Fixture, TeamDetail, ScorerEntry } from "./types";
 
 const BASE = "https://api.football-data.org/v4";
 
@@ -171,6 +171,29 @@ export class FootballDataSource implements DataSource {
     };
   }
 
+  async getScorers(leagueCode: LeagueCode, limit = 10): Promise<ScorerEntry[]> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    const data = await this.fetchJson<{ scorers: FdScorer[] }>(
+      `/competitions/${leagueCode}/scorers?${params.toString()}`
+    );
+    return (data.scorers ?? []).map((s) => ({
+      player: {
+        id: s.player.id,
+        name: s.player.name,
+        nationality: s.player.nationality,
+        position: s.player.position,
+      },
+      team: {
+        id: s.team.id,
+        name: s.team.name,
+        crest: s.team.crest,
+      },
+      goals: s.goals ?? 0,
+      assists: s.assists ?? 0,
+      playedMatches: s.playedMatches ?? 0,
+    }));
+  }
+
   async getRecentAndUpcomingFixturesForTeam(opts: {
     teamId: number;
     daysPast: number;
@@ -198,6 +221,14 @@ interface FdMatch {
   homeTeam: FdTeam;
   awayTeam: FdTeam;
   score: { fullTime: { home: number | null; away: number | null } };
+}
+
+interface FdScorer {
+  player: { id: number; name: string; nationality?: string; position?: string };
+  team: { id: number; name: string; crest?: string };
+  goals: number | null;
+  assists: number | null;
+  playedMatches: number | null;
 }
 
 interface FdTeamDetail {

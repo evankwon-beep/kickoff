@@ -32,6 +32,10 @@ export async function fetchTop4Standings(): Promise<Standings[]> {
   return Promise.all(TOP4.map((c) => football().getStandings(c)));
 }
 
+export async function fetchScorers(code: LeagueCode, limit = 10) {
+  return football().getScorers(code, limit).catch(() => []);
+}
+
 export async function fetchEnrichedFixtures(): Promise<Fixture[]> {
   // YouTube quota 등으로 영상이 실패해도 fixtures는 무조건 표시되도록 분리
   let fixtures: Fixture[] = [];

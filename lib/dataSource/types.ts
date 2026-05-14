@@ -84,6 +84,14 @@ export interface TeamDetail extends Team {
   runningCompetitions?: { code: string; name: string }[];
 }
 
+export interface ScorerEntry {
+  player: { id: number; name: string; nationality?: string; position?: string };
+  team: { id: number; name: string; crest?: string };
+  goals: number;
+  assists: number;
+  playedMatches: number;
+}
+
 export interface DataSource {
   getStandings(leagueCode: LeagueCode): Promise<Standings>;
   getGroupStandings(leagueCode: LeagueCode): Promise<{ group: string; standings: Standings }[]>;
@@ -94,6 +102,7 @@ export interface DataSource {
   }): Promise<Fixture[]>;
   getTeam(id: number): Promise<TeamDetail>;
   getRecentAndUpcomingFixturesForTeam(opts: { teamId: number; daysPast: number; daysFuture: number }): Promise<Fixture[]>;
+  getScorers(leagueCode: LeagueCode, limit?: number): Promise<ScorerEntry[]>;
 }
 
 export interface HighlightSource {

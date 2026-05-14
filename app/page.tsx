@@ -6,6 +6,7 @@ import { HighlightStrip } from "@/components/HighlightStrip";
 import { StaleDataNotice } from "@/components/StaleDataNotice";
 import { MajorTournamentsBanner } from "@/components/MajorTournamentsBanner";
 import { LeagueMarketValueSection } from "@/components/LeagueMarketValueSection";
+import { LeagueAwardsSection } from "@/components/LeagueAwardsSection";
 import { selectActiveTournaments } from "@/lib/majorTournaments";
 import {
   fetchTop4Standings,
@@ -44,6 +45,9 @@ export default async function HomePage() {
 
         {/* 새 섹션: 리그별 시장가치 TOP 5 (standings 무관 - 시장가치만 기준) */}
         <LeagueMarketValueSection />
+
+        {/* 새 섹션: 리그별 시즌 어워드 (득점왕/도움왕/수비왕) */}
+        <LeagueAwardsSection />
 
         {/* 순서 변경: 하이라이트 먼저, 경기 일정 나중 */}
         <HighlightStrip videos={videos} />
