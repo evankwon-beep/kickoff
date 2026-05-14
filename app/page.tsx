@@ -14,7 +14,9 @@ import {
   fetchFootballHighlights,
 } from "@/lib/dataSource";
 
-export const revalidate = 3600;
+// 영상 하이라이트는 시간대별로 새로 올라오니 짧게 갱신.
+// YouTube quota가 일시 실패해도 다음 사이클에서 즉시 회복되도록 10분으로 단축.
+export const revalidate = 600;
 
 export default async function HomePage() {
   const [standings, fixtures, videos] = await Promise.all([
