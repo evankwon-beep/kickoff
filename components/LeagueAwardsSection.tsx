@@ -21,7 +21,7 @@ function AwardRow({ entry, rank }: { entry: AwardEntry; rank: number }) {
         href={`/team/${entry.teamId}`}
         className="min-w-0 flex-1 hover:text-[var(--color-accent)] transition-colors"
       >
-        <p className="text-sm font-semibold leading-tight break-keep truncate">
+        <p className="text-sm font-semibold leading-tight break-keep">
           {entry.name}
         </p>
         <p className="text-[11px] text-[var(--color-muted)] flex items-center gap-1 mt-0.5">
@@ -99,11 +99,7 @@ function LeagueAwardCard({
       </h3>
       <SubSection icon="⚽" title="득점왕" entries={awards?.scorers ?? []} />
       <SubSection icon="🎯" title="도움왕" entries={awards?.assists ?? []} />
-      <SubSection
-        icon="🛡️"
-        title="수비왕 (수비수 시장가치 TOP)"
-        entries={awards?.defense ?? []}
-      />
+      {/* 수비왕 섹션은 무료 API에 수비 통계(태클/볼 저지 등)가 없어서 제거 */}
     </div>
   );
 }
@@ -117,7 +113,7 @@ export async function LeagueAwardsSection() {
   return (
     <section>
       <h2 className="section-title text-xl mb-3">
-        리그별 득점왕 · 도움왕 · 수비왕 TOP 3
+        리그별 득점왕 · 도움왕 TOP 3
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {TOP4_LEAGUES.map((l) => (
