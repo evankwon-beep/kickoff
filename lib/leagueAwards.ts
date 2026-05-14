@@ -1,6 +1,10 @@
 import "server-only";
 import { fetchScorers, fetchTop4Standings } from "@/lib/dataSource";
 import { fetchNaverSquad, fetchNaverPersonPhoto } from "@/lib/naverSquad";
+import {
+  fetchNaverLeagueRecord,
+  type NaverRecordPlayer,
+} from "@/lib/naverSportsRecord";
 import { koreanTeamName } from "@/lib/i18n";
 import {
   SECTION,
@@ -216,6 +220,34 @@ async function fetchTopDefenders(
   });
 }
 
+/**
+ * 네이버 record API row를 AwardEntry로 변환.
+ * 네이버는 이미 한국어 이름/팀명/사진을 주므로 추가 fetch 없이 그대로 사용.
+ * teamId 매핑이 실패한(0) 경우 crestUrl이 깨지지 않도록 빈 문자열로 두고,
+ * 팀 페이지 링크 등 컴포넌트가 0을 invalid로 인식해 비활성화하게 합니다.
+ */
+function naverRowToAward(
+  row: NaverRecordPlayer,
+  value: number,
+  unit: string
+): AwardEntry {
+  return {
+    name: row.name,
+    teamId: row.teamId,
+    // 네이버 팀명을 한국어 매핑으로 재정규화 (teamId 매핑 성공 시 우리 표준 표기 사용)
+    teamName: row.teamId
+      ? koreanTeamName(row.teamId, row.teamName)
+      : row.teamName,
+    crestUrl: row.teamId
+      ? `https://crests.football-data.org/${row.teamId}.png`
+      : "",
+    photoUrl: row.photoUrl,
+    nationality: row.countryId,
+    value,
+    unit,
+  };
+}
+
 /** 단일 리그의 시즌 어워드 (득점왕/도움왕/수비왕 top 3) */
 export async function fetchLeagueAwards(
   league: LeagueCode,
@@ -223,8 +255,24 @@ export async function fetchLeagueAwards(
   topN = 3
 ): Promise<LeagueAwards> {
   void _standings; // standings는 더 이상 defense 산출에 쓰이지 않음 (signature 호환 유지)
-  const scorerEntries = await fetchScorers(league, 10);
 
+  // 1) Naver record API 우선 시도 (football-data /scorers의 player↔team 부정확 이슈 우회).
+  //    지원되는 리그만 (PL/PD/BL1/FL1). SA 및 기타는 곧장 fallback.
+  const naverRecord = await fetchNaverLeagueRecord(league, 10).catch(() => null);
+
+  if (naverRecord && (naverRecord.scorers.length > 0 || naverRecord.assists.length > 0)) {
+    const scorers = naverRecord.scorers
+      .slice(0, topN)
+      .map((r) => naverRowToAward(r, r.goals, "골"));
+    const assists = naverRecord.assists
+      .slice(0, topN)
+      .map((r) => naverRowToAward(r, r.assists, "도움"));
+    const defense = await fetchTopDefenders(league, topN);
+    return { league, scorers, assists, defense };
+  }
+
+  // 2) Fallback: 기존 football-data 경로
+  const scorerEntries = await fetchScorers(league, 10);
   const [scorers, assists, defense] = await Promise.all([
     enrichScorerEntries(scorerEntries, (e) => e.goals, "골", topN),
     enrichScorerEntries(scorerEntries, (e) => e.assists, "도움", topN),
