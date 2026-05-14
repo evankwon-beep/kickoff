@@ -107,10 +107,15 @@ async function enrichScorerEntries(
       const matched = squad
         ? matchSquad(squad, displayName, e.player.name)
         : undefined;
-      // squad 매칭 실패 시 네이버 인물 검색 og:image fallback
+      // squad 매칭됐어도 profileUrl이 빈 문자열인 경우 fallback 동작하도록 truthy 체크
+      const squadPhoto = matched?.profileUrl?.trim()
+        ? matched.profileUrl
+        : null;
+      // fallback 검색어: squad에서 매칭된 정확한 한국어 이름이 가장 좋음
+      const searchName = matched?.name ?? displayName;
       const photoUrl =
-        matched?.profileUrl ??
-        (await fetchNaverPersonPhoto(displayName)) ??
+        squadPhoto ??
+        (await fetchNaverPersonPhoto(searchName)) ??
         undefined;
       return {
         // 우선순위: Naver squad 매칭된 한국어 이름 > 영문→한국어 매핑 > 원본 영문
