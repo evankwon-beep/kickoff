@@ -80,17 +80,20 @@ export async function fetchNaverSquad(fdTeamId: number): Promise<NaverPlayer[] |
 
 /**
  * Squad에 없거나 squad의 profileUrl이 빈 선수를 위한 fallback.
- * 네이버 검색 결과 HTML에서 인물 사진 URL을 가져온다.
+ * 데스크톱 네이버 검색 결과 HTML에서 인물 사진 URL을 가져온다.
  *
- * 1차: og:image (네이버 favicon/logo는 reject)
- * 2차: HTML 본문의 search.pstatic.net/common/?src=... 패턴 (인물 카드 썸네일)
+ * 핵심: 네이버의 진짜 인물 사진은 src=...sstatic.naver.net/people/... 또는
+ * src=...sstatic.naver.net/keypage/image/... 로 들어옴. 그 외의 search.pstatic.net
+ * common URL은 뉴스 매체 로고나 favicon이므로 제외해야 함.
  */
+const DESKTOP_SEARCH = "https://search.naver.com/search.naver";
+
 export async function fetchNaverPersonPhoto(
   koName: string
 ): Promise<string | null> {
   if (!koName) return null;
   const tryQuery = async (q: string): Promise<string | null> => {
-    const url = `${SEARCH_BASE}?query=${encodeURIComponent(q)}`;
+    const url = `${DESKTOP_SEARCH}?where=nexearch&query=${encodeURIComponent(q)}`;
     try {
       const res = await fetch(url, {
         headers: { "User-Agent": UA, "Accept-Language": "ko" },
@@ -98,36 +101,21 @@ export async function fetchNaverPersonPhoto(
       } as RequestInit);
       if (!res.ok) return null;
       const html = await res.text();
-      // 1차: og:image — 단 네이버 기본 favicon/logo는 거름
-      const og = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
-      const ogUrl = og?.[1];
-      if (
-        ogUrl &&
-        ogUrl.includes("pstatic.net") &&
-        !ogUrl.includes("og_default") &&
-        !ogUrl.includes("/logo/") &&
-        !ogUrl.includes("naver_share") &&
-        !ogUrl.includes("og_200x200") &&
-        !ogUrl.includes("/favicon/")
-      ) {
-        return ogUrl;
-      }
-      // 2차: HTML 본문의 인물 카드 썸네일 (CDN proxy URL)
-      // 큰 사이즈(type=f128_128 또는 f223_281 등) 우선, 없으면 작은 거라도
-      const big = html.match(
-        /https:\/\/search\.pstatic\.net\/common\/\?src=[^"'\s&]+(?:&amp;|&)type=f(?:128_128|223_281|180_180|200_200)/
+      // sstatic.naver.net/people/ 또는 keypage/image/dss/ — 진짜 인물 사진만
+      const person = html.match(
+        /https:\/\/search\.pstatic\.net\/common\?[^"']*src=https?%3A%2F%2Fsstatic\.naver\.net%2Fpeople%2F[^"']+/
       );
-      if (big?.[0]) return big[0].replace(/&amp;/g, "&");
-      const any = html.match(
-        /https:\/\/search\.pstatic\.net\/common\/\?src=[^"'\s&]+(?:&amp;|&)type=f\d+_\d+/
+      if (person?.[0]) return person[0].replace(/&amp;/g, "&");
+      const keypage = html.match(
+        /https:\/\/search\.pstatic\.net\/common\?[^"']*src=https?%3A%2F%2Fsstatic\.naver\.net%2Fkeypage%2Fimage%2Fdss%2F[^"']+/
       );
-      if (any?.[0]) return any[0].replace(/&amp;/g, "&");
+      if (keypage?.[0]) return keypage[0].replace(/&amp;/g, "&");
       return null;
     } catch {
       return null;
     }
   };
-  // 한 번 시도 후, 하이픈/공백 변형도 한 번 더 시도 (예: "모건 깁스-화이트" → "모건 깁스 화이트")
+  // 검색어 변형들: 원본 → 하이픈 제거 → 공백 제거
   const variants = [koName];
   if (koName.includes("-")) variants.push(koName.replace(/-/g, " "));
   if (koName.includes(" ")) variants.push(koName.replace(/\s+/g, ""));
