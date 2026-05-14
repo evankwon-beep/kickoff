@@ -106,7 +106,7 @@ export default async function CompetitionPage({ params }: PageProps) {
               <HighlightStrip
                 videos={highlights}
                 layout="grid"
-                limit={6}
+                limit={12}
                 title={`${title} 하이라이트`}
                 emptyStateQuery={`${SEARCH_KEYWORDS[code]} 하이라이트`}
                 className="flex-1"

@@ -41,7 +41,7 @@ export class YoutubeHighlightSource implements HighlightSource {
       maxResults: String(maxResults),
     });
     const res = await fetch(`${BASE}/search?${params.toString()}`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 21600 },
     } as RequestInit);
     if (!res.ok) throw new Error(`youtube ${res.status}`);
     const data = (await res.json()) as YtSearchResponse;
@@ -81,7 +81,7 @@ export class YoutubeHighlightSource implements HighlightSource {
       });
       try {
         const res = await fetch(`${BASE}/search?${params.toString()}`, {
-          next: { revalidate: 3600 },
+          next: { revalidate: 21600 },
         } as RequestInit);
         if (!res.ok) continue;
         const data = (await res.json()) as YtSearchResponse;
@@ -118,7 +118,7 @@ export class YoutubeHighlightSource implements HighlightSource {
       });
       try {
         const res = await fetch(`${BASE}/videos?${params.toString()}`, {
-          next: { revalidate: 3600 },
+          next: { revalidate: 21600 },
         } as RequestInit);
         if (!res.ok) continue;
         const data = (await res.json()) as { items?: Array<{ id: string; contentDetails?: { duration?: string } }> };

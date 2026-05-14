@@ -120,29 +120,17 @@ export async function fetchTeamFixtures(teamId: number) {
 
 /**
  * 팀 페이지 하이라이트.
- * 사용자 요구: "팀명을 두 채널(쿠팡플레이/SPOTV)에 검색했을 때 가장 최근 경기 영상"을 가져와야 한다.
- * → 채널 안 검색(searchInChannels)으로 통일. 전체 YouTube 검색은 사용하지 않음.
+ * 사용자 요구: "팀명을 두 채널(쿠팡플레이/SPOTV)에 검색했을 때 가장 최근 경기 영상".
+ *
+ * QUOTA 0 전략: 메인 페이지에서 이미 가져오는 두 채널 최근 영상 풀(getRecentVideos)을
+ * 재사용 (Next.js fetch 캐시로 같은 URL 호출은 캐시 공유). 새 search.list 호출 없음.
+ * 같은 두 채널 안에서 팀 키워드 매칭이므로 사용자 요구와 동일한 의미.
  */
 export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 20) {
-  const channels = [env.youtubePrimaryChannelId(), ...env.youtubeFallbackChannelIds()].filter(Boolean);
-  if (channels.length === 0) return [];
-
-  // QUOTA 절약: 한국어 alias 한 번만 검색 (이전: 3 queries × 2 channels = 600 unit
-  // → 1 query × 2 channels = 200 unit). 매핑에 없으면 영문 shortName으로 폴백.
-  const koMap = (await import("@/data/team-korean-names.json")).default as Array<{
-    id: number;
-    query: string;
-  }>;
-  const koreanName = koMap.find((t) => t.id === team.id)?.query;
-  const query = (koreanName || team.shortName || team.name).trim();
-  if (!query) return [];
-
-  const merged = await youtube()
-    .searchInChannels(query, channels, 50)
+  const all = await youtube()
+    .getRecentVideos({ maxResults: 100 })
     .catch(() => [] as HighlightVideo[]);
-
-  // 노이즈(다른 팀/스포츠/리뷰 등) 한 번 더 정제
-  const refined = filterByTeam(merged, team);
+  const refined = filterByTeam(all, team);
   refined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
   return refined.slice(0, maxResults);
 }
@@ -219,16 +207,12 @@ export async function fetchCompetitionHighlights(
 ): Promise<HighlightVideo[]> {
   const keywords = COMPETITION_KEYWORDS[code] ?? [];
   if (keywords.length === 0) return [];
-  const channels = [env.youtubePrimaryChannelId(), ...env.youtubeFallbackChannelIds()].filter(Boolean);
-  if (channels.length === 0) return [];
 
-  // QUOTA 절약: 한국어 키워드 한 개만 사용 (예: CL=챔피언스). 영문 키워드는 안전망 필터에서만 사용.
-  const primaryKeyword = keywords[0];
+  // QUOTA 0: 메인의 두 채널 풀 재사용. 키워드(한·영) 제목 매칭으로 client-side filter.
   const merged = await youtube()
-    .searchInChannels(primaryKeyword, channels, 50)
+    .getRecentVideos({ maxResults: 100 })
     .catch(() => [] as HighlightVideo[]);
 
-  // 안전망: ① 대회 키워드(영문 포함)가 제목에 포함, ② 프리뷰/리뷰/주요장면/다른 스포츠 EXCLUDE
   const lowerKw = keywords.map((k) => k.toLowerCase());
   const filtered = filterOutNonHighlights(merged).filter((v) => {
     const lower = v.title.toLowerCase();
