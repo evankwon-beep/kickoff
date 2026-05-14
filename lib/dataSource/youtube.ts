@@ -56,36 +56,52 @@ export class YoutubeHighlightSource implements HighlightSource {
       }));
   }
 
-  /** YouTube 전체에서 키워드로 검색. 채널 제한 없음. 팀 페이지에서 풍부한 결과 확보용. */
-  async searchByQuery(query: string, maxResults = 25): Promise<HighlightVideo[]> {
-    const params = new URLSearchParams({
-      key: this.apiKey,
-      q: query,
-      part: "snippet",
-      order: "date",
-      type: "video",
-      relevanceLanguage: "ko",
-      maxResults: String(Math.min(maxResults, 50)),
-    });
-    try {
-      const res = await fetch(`${BASE}/search?${params.toString()}`, {
-        next: { revalidate: 43200 }, // 12h
-      } as RequestInit);
-      if (!res.ok) return [];
-      const data = (await res.json()) as YtSearchResponse;
-      const videos: HighlightVideo[] = data.items
-        .filter((i) => i.id.videoId)
-        .map((i) => ({
-          videoId: i.id.videoId!,
-          title: i.snippet.title,
-          channelTitle: i.snippet.channelTitle,
-          publishedAt: i.snippet.publishedAt,
-          thumbnailUrl: i.snippet.thumbnails.high?.url ?? i.snippet.thumbnails.default?.url ?? "",
-        }));
-      return this.filterOutShorts(videos);
-    } catch {
-      return [];
+  /**
+   * 특정 채널(들) "안에서만" 키워드 검색. 사용자 요구상 두 채널(쿠팡플레이/SPOTV)에 한정해 검색해야 할 때 사용.
+   * order=date(최신순). 여러 채널이면 결과를 병합하고 publishedAt desc로 정렬한 뒤 shorts 필터를 적용한다.
+   */
+  async searchInChannels(
+    query: string,
+    channelIds: string[],
+    maxResultsPerChannel = 50
+  ): Promise<HighlightVideo[]> {
+    const channels = channelIds.filter(Boolean);
+    if (channels.length === 0) return [];
+    const collected: HighlightVideo[] = [];
+    const seen = new Set<string>();
+    for (const channelId of channels) {
+      const params = new URLSearchParams({
+        key: this.apiKey,
+        channelId,
+        q: query,
+        part: "snippet",
+        order: "date",
+        type: "video",
+        maxResults: String(Math.min(maxResultsPerChannel, 50)),
+      });
+      try {
+        const res = await fetch(`${BASE}/search?${params.toString()}`, {
+          next: { revalidate: 3600 },
+        } as RequestInit);
+        if (!res.ok) continue;
+        const data = (await res.json()) as YtSearchResponse;
+        for (const i of data.items) {
+          if (!i.id.videoId || seen.has(i.id.videoId)) continue;
+          seen.add(i.id.videoId);
+          collected.push({
+            videoId: i.id.videoId,
+            title: i.snippet.title,
+            channelTitle: i.snippet.channelTitle,
+            publishedAt: i.snippet.publishedAt,
+            thumbnailUrl: i.snippet.thumbnails.high?.url ?? i.snippet.thumbnails.default?.url ?? "",
+          });
+        }
+      } catch {
+        // 채널 하나 실패해도 다음 채널은 계속 시도
+      }
     }
+    collected.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    return this.filterOutShorts(collected);
   }
 
   private async filterOutShorts(videos: HighlightVideo[]): Promise<HighlightVideo[]> {

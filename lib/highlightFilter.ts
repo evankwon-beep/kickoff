@@ -130,3 +130,11 @@ export function filterByTeam(videos: HighlightVideo[], team: Team): HighlightVid
     return aliases.some((a) => lower.includes(a.toLowerCase()));
   });
 }
+
+/** 채널 검색 결과에서 다른 스포츠/리뷰·프리뷰 등 비-하이라이트 컨텐츠를 제거. 팀/대회 무관용 EXCLUDE 적용. */
+export function filterOutNonHighlights(videos: HighlightVideo[]): HighlightVideo[] {
+  return videos.filter((v) => {
+    const lower = v.title.toLowerCase();
+    return !EXCLUDE_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
+  });
+}

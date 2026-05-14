@@ -4,7 +4,7 @@ import { FootballDataSource } from "./footballData";
 import { YoutubeHighlightSource } from "./youtube";
 import { matchHighlights } from "@/lib/highlightMatcher";
 import { tagKoreanFixtures } from "@/lib/koreanPlayers";
-import { filterFootballHighlights, filterByTeam } from "@/lib/highlightFilter";
+import { filterFootballHighlights, filterByTeam, filterOutNonHighlights } from "@/lib/highlightFilter";
 import { fetchNaverSquad } from "@/lib/naverSquad";
 import type { Fixture, LeagueCode, Standings, HighlightVideo, SquadMember, TeamDetail } from "./types";
 
@@ -118,45 +118,77 @@ export async function fetchTeamFixtures(teamId: number) {
   });
 }
 
-export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 50) {
-  const capped = Math.min(maxResults, 50);
+/**
+ * 팀 페이지 하이라이트.
+ * 사용자 요구: "팀명을 두 채널(쿠팡플레이/SPOTV)에 검색했을 때 가장 최근 경기 영상"을 가져와야 한다.
+ * → 채널 안 검색(searchInChannels)으로 통일. 전체 YouTube 검색은 사용하지 않음.
+ */
+export async function fetchTeamHighlights(team: import("./types").Team, maxResults = 20) {
+  const channels = [env.youtubePrimaryChannelId(), ...env.youtubeFallbackChannelIds()].filter(Boolean);
+  if (channels.length === 0) return [];
 
-  // 1) 두 사용자 채널에서 그 팀 매칭
-  const channelVideos = await youtube()
-    .getRecentVideos({ maxResults: capped })
-    .catch(() => [] as HighlightVideo[]);
-  const teamFromChannels = filterByTeam(channelVideos, team);
-
-  if (teamFromChannels.length >= 10) {
-    return teamFromChannels.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-  }
-
-  // 2) 부족하면 YouTube 전체에서 한국어 팀명으로 검색
+  // 한국어 alias 우선, 영문 shortName/name도 함께 검색해 dedupe
   const koMap = (await import("@/data/team-korean-names.json")).default as Array<{
     id: number;
     query: string;
   }>;
   const koreanName = koMap.find((t) => t.id === team.id)?.query;
-  const query = `${koreanName ?? team.shortName ?? team.name} 하이라이트`;
-  const searchVideos = await youtube()
-    .searchByQuery(query, 25)
-    .catch(() => [] as HighlightVideo[]);
-  const teamFromSearch = filterByTeam(searchVideos, team);
+  const queries = Array.from(
+    new Set(
+      [koreanName, team.shortName, team.name]
+        .filter((s): s is string => !!s && s.trim().length > 0)
+        .map((s) => s.trim())
+    )
+  );
 
-  const seen = new Set(teamFromChannels.map((v) => v.videoId));
-  const combined: HighlightVideo[] = [...teamFromChannels];
-  for (const v of teamFromSearch) {
-    if (seen.has(v.videoId)) continue;
-    seen.add(v.videoId);
-    combined.push(v);
+  const seen = new Set<string>();
+  const merged: HighlightVideo[] = [];
+  for (const q of queries) {
+    const vids = await youtube()
+      .searchInChannels(q, channels, 50)
+      .catch(() => [] as HighlightVideo[]);
+    for (const v of vids) {
+      if (seen.has(v.videoId)) continue;
+      seen.add(v.videoId);
+      merged.push(v);
+    }
   }
-  combined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-  return combined;
+
+  // 노이즈(다른 팀/스포츠/리뷰 등) 한 번 더 정제
+  const refined = filterByTeam(merged, team);
+  refined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return refined.slice(0, maxResults);
 }
 
+/**
+ * 메인 페이지 하단 하이라이트.
+ * 사용자 요구: "팀 관계없이 가장 최근 경기 영상을 두 채널에서 가져오기 + 최소 10개 + 최근순".
+ * 두 채널의 최근 영상을 받아 축구 하이라이트 필터를 통과시키고, publishedAt desc로 정렬.
+ * 필터 통과가 10개 미만이면 필터되지 않은 최근 영상으로 보강(shorts는 제외).
+ */
 export async function fetchFootballHighlights(maxResults = 24) {
-  const all = await youtube().getRecentVideos({ maxResults });
-  return filterFootballHighlights(all);
+  const fetchSize = Math.max(maxResults, 50);
+  const all = await youtube()
+    .getRecentVideos({ maxResults: fetchSize })
+    .catch(() => [] as HighlightVideo[]);
+  // getRecentVideos는 이미 publishedAt desc + shorts 제거 상태
+  const filtered = filterFootballHighlights(all);
+
+  if (filtered.length >= Math.min(10, maxResults)) {
+    return filtered.slice(0, maxResults);
+  }
+
+  // 최소 10개 보장을 위해 필터 통과되지 않은 최근 영상도 추가(shorts/중복은 제외).
+  const seen = new Set(filtered.map((v) => v.videoId));
+  const filler: HighlightVideo[] = [];
+  for (const v of all) {
+    if (seen.has(v.videoId)) continue;
+    filler.push(v);
+  }
+  const combined = [...filtered, ...filler];
+  // 중복 없는 상태로 publishedAt desc 보장
+  combined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return combined.slice(0, Math.max(maxResults, 10));
 }
 
 // Filter the existing fetchEnrichedFixtures by top-N teams across TOP4 leagues.
@@ -189,43 +221,41 @@ const COMPETITION_KEYWORDS: Record<string, string[]> = {
   FL1: ["리그앙", "ligue 1", "ligue1"],
 };
 
+/**
+ * 대회 페이지 하이라이트.
+ * 사용자 요구: "챔피언스리그 섹션 누르면 해당 대회 영상을, 월드컵 개최 시 월드컵 영상을".
+ * → 두 채널 안에서 대회 키워드들로 검색하고 publishedAt desc로 반환.
+ */
 export async function fetchCompetitionHighlights(
   code: LeagueCode,
-  maxResults = 50
+  maxResults = 20
 ): Promise<HighlightVideo[]> {
   const keywords = COMPETITION_KEYWORDS[code] ?? [];
   if (keywords.length === 0) return [];
+  const channels = [env.youtubePrimaryChannelId(), ...env.youtubeFallbackChannelIds()].filter(Boolean);
+  if (channels.length === 0) return [];
 
-  // 1) 두 사용자 채널에서 가져와서 대회 키워드 매칭
-  const channelVideos = await youtube()
-    .getRecentVideos({ maxResults: Math.min(maxResults, 50) })
-    .catch(() => [] as HighlightVideo[]);
-  const fromChannels = filterFootballHighlights(channelVideos).filter((v) => {
-    const lower = v.title.toLowerCase();
-    return keywords.some((k) => lower.includes(k.toLowerCase()));
-  });
-  if (fromChannels.length >= 10) return fromChannels;
-
-  // 2) 부족하면 YouTube 전체 검색 (대회 한국어 키워드)
-  const queryKeyword = keywords.find((k) => /[ㄱ-힯]/.test(k)) ?? keywords[0];
-  const query = `${queryKeyword} 하이라이트`;
-  const searchVideos = await youtube()
-    .searchByQuery(query, 25)
-    .catch(() => [] as HighlightVideo[]);
-  const fromSearch = filterFootballHighlights(searchVideos).filter((v) => {
-    const lower = v.title.toLowerCase();
-    return keywords.some((k) => lower.includes(k.toLowerCase()));
-  });
-
-  const seen = new Set(fromChannels.map((v) => v.videoId));
-  const merged = [...fromChannels];
-  for (const v of fromSearch) {
-    if (seen.has(v.videoId)) continue;
-    seen.add(v.videoId);
-    merged.push(v);
+  const seen = new Set<string>();
+  const merged: HighlightVideo[] = [];
+  for (const q of keywords) {
+    const vids = await youtube()
+      .searchInChannels(q, channels, 50)
+      .catch(() => [] as HighlightVideo[]);
+    for (const v of vids) {
+      if (seen.has(v.videoId)) continue;
+      seen.add(v.videoId);
+      merged.push(v);
+    }
   }
-  merged.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-  return merged;
+
+  // 안전망: ① 대회 키워드가 제목에 포함, ② 프리뷰/리뷰/주요장면/다른 스포츠 등 EXCLUDE 제외
+  const lowerKw = keywords.map((k) => k.toLowerCase());
+  const filtered = filterOutNonHighlights(merged).filter((v) => {
+    const lower = v.title.toLowerCase();
+    return lowerKw.some((k) => lower.includes(k));
+  });
+  filtered.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return filtered.slice(0, maxResults);
 }
 
 export async function fetchCompetitionFixtures(code: LeagueCode) {
