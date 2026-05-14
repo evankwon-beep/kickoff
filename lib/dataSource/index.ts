@@ -50,7 +50,7 @@ export async function fetchEnrichedFixtures(): Promise<Fixture[]> {
     return [];
   }
   try {
-    videos = await youtube().getRecentVideos({ maxResults: 30 });
+    videos = await youtube().getRecentVideos({ maxResults: 50 });
   } catch {
     // YouTube 실패해도 fixtures는 살림 (영상 매칭만 빠짐)
   }
@@ -241,7 +241,7 @@ export async function fetchCompetitionFixtures(code: LeagueCode) {
   }
   let enriched = fixtures;
   try {
-    const videos = await youtube().getRecentVideos({ maxResults: 30 });
+    const videos = await youtube().getRecentVideos({ maxResults: 50 });
     enriched = matchHighlights(fixtures, videos);
   } catch {
     // Youtube 실패해도 fixtures는 반환
@@ -256,7 +256,7 @@ export async function fetchChampionsLeagueFixtures(): Promise<Fixture[]> {
       daysPast: 14,
       daysFuture: 21,
     }),
-    youtube().getRecentVideos({ maxResults: 30 }),
+    youtube().getRecentVideos({ maxResults: 50 }),
   ]);
   return tagKoreanFixtures(matchHighlights(fixtures, videos));
 }
