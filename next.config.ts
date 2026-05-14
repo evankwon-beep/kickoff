@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i.ytimg.com" },
       { protocol: "https", hostname: "sports-phinf.pstatic.net" },
       { protocol: "https", hostname: "phinf.pstatic.net" },
+      { protocol: "https", hostname: "search.pstatic.net" },
+      { protocol: "https", hostname: "ssl.pstatic.net" },
     ],
   },
 };
