@@ -127,32 +127,19 @@ export async function fetchTeamHighlights(team: import("./types").Team, maxResul
   const channels = [env.youtubePrimaryChannelId(), ...env.youtubeFallbackChannelIds()].filter(Boolean);
   if (channels.length === 0) return [];
 
-  // 한국어 alias 우선, 영문 shortName/name도 함께 검색해 dedupe
+  // QUOTA 절약: 한국어 alias 한 번만 검색 (이전: 3 queries × 2 channels = 600 unit
+  // → 1 query × 2 channels = 200 unit). 매핑에 없으면 영문 shortName으로 폴백.
   const koMap = (await import("@/data/team-korean-names.json")).default as Array<{
     id: number;
     query: string;
   }>;
   const koreanName = koMap.find((t) => t.id === team.id)?.query;
-  const queries = Array.from(
-    new Set(
-      [koreanName, team.shortName, team.name]
-        .filter((s): s is string => !!s && s.trim().length > 0)
-        .map((s) => s.trim())
-    )
-  );
+  const query = (koreanName || team.shortName || team.name).trim();
+  if (!query) return [];
 
-  const seen = new Set<string>();
-  const merged: HighlightVideo[] = [];
-  for (const q of queries) {
-    const vids = await youtube()
-      .searchInChannels(q, channels, 50)
-      .catch(() => [] as HighlightVideo[]);
-    for (const v of vids) {
-      if (seen.has(v.videoId)) continue;
-      seen.add(v.videoId);
-      merged.push(v);
-    }
-  }
+  const merged = await youtube()
+    .searchInChannels(query, channels, 50)
+    .catch(() => [] as HighlightVideo[]);
 
   // 노이즈(다른 팀/스포츠/리뷰 등) 한 번 더 정제
   const refined = filterByTeam(merged, team);
@@ -235,20 +222,13 @@ export async function fetchCompetitionHighlights(
   const channels = [env.youtubePrimaryChannelId(), ...env.youtubeFallbackChannelIds()].filter(Boolean);
   if (channels.length === 0) return [];
 
-  const seen = new Set<string>();
-  const merged: HighlightVideo[] = [];
-  for (const q of keywords) {
-    const vids = await youtube()
-      .searchInChannels(q, channels, 50)
-      .catch(() => [] as HighlightVideo[]);
-    for (const v of vids) {
-      if (seen.has(v.videoId)) continue;
-      seen.add(v.videoId);
-      merged.push(v);
-    }
-  }
+  // QUOTA 절약: 한국어 키워드 한 개만 사용 (예: CL=챔피언스). 영문 키워드는 안전망 필터에서만 사용.
+  const primaryKeyword = keywords[0];
+  const merged = await youtube()
+    .searchInChannels(primaryKeyword, channels, 50)
+    .catch(() => [] as HighlightVideo[]);
 
-  // 안전망: ① 대회 키워드가 제목에 포함, ② 프리뷰/리뷰/주요장면/다른 스포츠 등 EXCLUDE 제외
+  // 안전망: ① 대회 키워드(영문 포함)가 제목에 포함, ② 프리뷰/리뷰/주요장면/다른 스포츠 EXCLUDE
   const lowerKw = keywords.map((k) => k.toLowerCase());
   const filtered = filterOutNonHighlights(merged).filter((v) => {
     const lower = v.title.toLowerCase();
