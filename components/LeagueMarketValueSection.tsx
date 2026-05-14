@@ -20,9 +20,9 @@ function StarRow({ p, rank }: { p: LeagueStarPlayer; rank: number }) {
       <PlayerPhoto name={p.name} photoUrl={p.photoUrl} size={36} />
       <Link
         href={`/team/${p.teamId}`}
-        className="min-w-0 flex-1 hover:text-[var(--color-accent)] transition-colors"
+        className="min-w-0 flex-1 overflow-hidden hover:text-[var(--color-accent)] transition-colors"
       >
-        <p className="text-sm font-semibold leading-tight break-keep">{p.name}</p>
+        <p className="text-[13px] font-semibold leading-tight break-words">{p.name}</p>
         <p className="text-[11px] text-[var(--color-muted)] flex items-center gap-1 mt-0.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

@@ -19,9 +19,9 @@ function AwardRow({ entry, rank }: { entry: AwardEntry; rank: number }) {
       <PlayerPhoto name={entry.name} photoUrl={entry.photoUrl} size={32} />
       <Link
         href={`/team/${entry.teamId}`}
-        className="min-w-0 flex-1 hover:text-[var(--color-accent)] transition-colors"
+        className="min-w-0 flex-1 overflow-hidden hover:text-[var(--color-accent)] transition-colors"
       >
-        <p className="text-sm font-semibold leading-tight break-keep">
+        <p className="text-[13px] font-semibold leading-tight break-words">
           {entry.name}
         </p>
         <p className="text-[11px] text-[var(--color-muted)] flex items-center gap-1 mt-0.5">
