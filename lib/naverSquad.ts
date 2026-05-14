@@ -88,10 +88,22 @@ export async function fetchNaverSquad(fdTeamId: number): Promise<NaverPlayer[] |
  */
 const DESKTOP_SEARCH = "https://search.naver.com/search.naver";
 
+// 잘못 매칭으로 동명이인 사진이 노출된 케이스를 위한 강제 차단 리스트
+// 한국어 이름이 여기 있으면 fallback fetch 결과를 무시하고 null 반환 (placeholder 표시).
+const PHOTO_BLOCKLIST = new Set<string>([
+  "파블로 파지스", // 네이버에 인물 카드 없음 → 검색 결과의 손흥민 사진을 잘못 잡음
+]);
+
 export async function fetchNaverPersonPhoto(
   koName: string
 ): Promise<string | null> {
   if (!koName) return null;
+  if (PHOTO_BLOCKLIST.has(koName.trim())) return null;
+
+  // 페이지에 검색어가 실제 등장하는지(=검색이 유의미한지) 약한 검증.
+  // 안 나오면 검색 키워드가 페이지에 없는 거라 다른 사람 사진일 확률이 높음.
+  const tokens = koName.split(/[\s\-·]/).filter((t) => t.length >= 2);
+
   const tryQuery = async (q: string): Promise<string | null> => {
     const url = `${DESKTOP_SEARCH}?where=nexearch&query=${encodeURIComponent(q)}`;
     try {
@@ -101,21 +113,23 @@ export async function fetchNaverPersonPhoto(
       } as RequestInit);
       if (!res.ok) return null;
       const html = await res.text();
-      // sstatic.naver.net/people/ 또는 keypage/image/dss/ — 진짜 인물 사진만
-      const person = html.match(
-        /https:\/\/search\.pstatic\.net\/common\?[^"']*src=https?%3A%2F%2Fsstatic\.naver\.net%2Fpeople%2F[^"']+/
-      );
-      if (person?.[0]) return person[0].replace(/&amp;/g, "&");
-      const keypage = html.match(
-        /https:\/\/search\.pstatic\.net\/common\?[^"']*src=https?%3A%2F%2Fsstatic\.naver\.net%2Fkeypage%2Fimage%2Fdss%2F[^"']+/
-      );
-      if (keypage?.[0]) return keypage[0].replace(/&amp;/g, "&");
+      // 페이지 전체에 검색어 토큰이 충분히 등장해야 진짜 그 사람 검색 페이지
+      if (
+        tokens.length > 0 &&
+        !tokens.every((t) => (html.split(t).length - 1) >= 3)
+      ) {
+        return null;
+      }
+      const PERSON_RE =
+        /https:\/\/search\.pstatic\.net\/common\?[^"']*src=https?%3A%2F%2Fsstatic\.naver\.net%2F(?:people|keypage%2Fimage%2Fdss)%2F[^"']+/;
+      const m = html.match(PERSON_RE);
+      if (m?.[0]) return m[0].replace(/&amp;/g, "&");
       return null;
     } catch {
       return null;
     }
   };
-  // 검색어 변형들: 원본 → 하이픈 제거 → 공백 제거
+
   const variants = [koName];
   if (koName.includes("-")) variants.push(koName.replace(/-/g, " "));
   if (koName.includes(" ")) variants.push(koName.replace(/\s+/g, ""));
