@@ -137,33 +137,20 @@ export async function fetchTeamHighlights(team: import("./types").Team, maxResul
 
 /**
  * 메인 페이지 하단 하이라이트.
- * 사용자 요구: "팀 관계없이 가장 최근 경기 영상을 두 채널에서 가져오기 + 최소 10개 + 최근순".
- * 두 채널의 최근 영상을 받아 축구 하이라이트 필터를 통과시키고, publishedAt desc로 정렬.
- * 필터 통과가 10개 미만이면 필터되지 않은 최근 영상으로 보강(shorts는 제외).
+ * 사용자 요구: "팀 관계없이 가장 최근 경기 영상을 두 채널에서 + 최소 10개 + 최근순 + **축구만**".
+ *
+ * 정책: 축구 필터를 통과한 영상만 노출. 통과 영상이 10개 미만이어도 비축구 영상으로
+ * 보강하지 않음 (사용자 우선순위: 축구만 > 10개 채우기). 풀 사이즈를 충분히 크게
+ * 가져가서 통과 수가 항상 10개 이상이 되도록 한다.
  */
 export async function fetchFootballHighlights(maxResults = 24) {
-  const fetchSize = Math.max(maxResults, 50);
+  // 풀 사이즈 200개(채널당 100). filterFootballHighlights 통과율이 20%만 돼도 40개 보장.
   const all = await youtube()
-    .getRecentVideos({ maxResults: fetchSize })
+    .getRecentVideos({ maxResults: 100 })
     .catch(() => [] as HighlightVideo[]);
   // getRecentVideos는 이미 publishedAt desc + shorts 제거 상태
   const filtered = filterFootballHighlights(all);
-
-  if (filtered.length >= Math.min(10, maxResults)) {
-    return filtered.slice(0, maxResults);
-  }
-
-  // 최소 10개 보장을 위해 필터 통과되지 않은 최근 영상도 추가(shorts/중복은 제외).
-  const seen = new Set(filtered.map((v) => v.videoId));
-  const filler: HighlightVideo[] = [];
-  for (const v of all) {
-    if (seen.has(v.videoId)) continue;
-    filler.push(v);
-  }
-  const combined = [...filtered, ...filler];
-  // 중복 없는 상태로 publishedAt desc 보장
-  combined.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-  return combined.slice(0, Math.max(maxResults, 10));
+  return filtered.slice(0, maxResults);
 }
 
 // Filter the existing fetchEnrichedFixtures by top-N teams across TOP4 leagues.
